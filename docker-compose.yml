@@ -1,0 +1,55 @@
+services:
+  app:
+    container_name: ${APP_PHP_NAME:-example-app}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./composer.json:/var/www/html/composer.json
+      - ./composer.lock:/var/www/html/composer.lock
+      - vendor_data:/var/www/html/vendor
+
+      - ./bin:/var/www/html/bin
+      - ./config:/var/www/html/config
+      - ./public:/var/www/html/public
+      - ./src:/var/www/html/src
+      - ./tests:/var/www/html/tests
+    depends_on:
+      - db
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  db:
+    container_name: ${APP_DB_NAME:-example-db}
+    image: postgres:15
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-myuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mypassword}
+      POSTGRES_DB: ${POSTGRES_DB:-mydb}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  mailhog:
+    container_name: ${MAIL_HOST:-example-smtp}
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+  vendor_data:
+
+networks:
+  app-network:
+    driver: bridge
