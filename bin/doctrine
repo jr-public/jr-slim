@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+use App\Bootstrap\DoctrineBootstrap;
+use Doctrine\ORM\Tools\Console\ConsoleRunner;
+use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+
+require_once(getenv("PROJECT_ROOT") . '/vendor/autoload.php');
+
+$entityManager = DoctrineBootstrap::create();
+ConsoleRunner::run(
+    new SingleManagerProvider($entityManager)
+);
