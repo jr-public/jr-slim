@@ -23,7 +23,7 @@ class AuthController {
     public function register(Request $request, Response $response): Response {
         $data = $request->getParsedBody();
         $data['client'] = $request->getAttribute('active_client');
-        $user = $this->userService->createUser($data);
+        $user = $this->userService->create($data);
         return $this->responseService->success($response, $user->toArray());
     }
     public function login(Request $request, Response $response): Response
