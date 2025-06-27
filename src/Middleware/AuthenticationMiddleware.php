@@ -11,7 +11,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
-class AuthMiddleware implements MiddlewareInterface
+class AuthenticationMiddleware implements MiddlewareInterface
 {
     private readonly UserRepository $user_repo;
 	private readonly TokenService $token_s;
