@@ -2,14 +2,27 @@
 namespace App\Service;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class UserService
 {
+    private readonly UserRepository $userRepo;
     private readonly EntityManagerInterface $entityManager;
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(UserRepository $userRepo, EntityManagerInterface $entityManager)
     {
+        $this->userRepo = $userRepo;
         $this->entityManager = $entityManager;
+    }
+    // All select type queries should be filtered depending on the client and also the user role
+    public function get(int $id): User {
+        return $this->userRepo->findOneBy(['id' => $id]);
+    }
+    public function list(): array {
+        return $this->userRepo->findAll();
+    }
+    public function listAsArray(): array {
+        return $this->userRepo->findAllAsArray();
     }
     public function create(array $data): User {
         $user = new User();
