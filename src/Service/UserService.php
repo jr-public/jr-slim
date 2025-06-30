@@ -16,14 +16,13 @@ class UserService
     }
     // All select type queries should be filtered depending on the client and also the user role
     public function get(int $id): User {
-        return $this->userRepo->findOneBy(['id' => $id]);
+        $options = ["id" => $id];
+        return $this->userRepo->findOneByFilters($options);
     }
-    public function list(): array {
-        return $this->userRepo->findAll();
+    public function list(array $options = []): array {
+        return $this->userRepo->findByFilters($options);
     }
-    public function listAsArray(): array {
-        return $this->userRepo->findAllAsArray();
-    }
+
     public function create(array $data): User {
         $user = new User();
         $user->setUsername($data['username']);
@@ -32,11 +31,6 @@ class UserService
         $user->setClient($data['client']);
         $this->entityManager->persist($user);
         $this->entityManager->flush();
-        // Validate (or delegate to validator)
-        // Hash password
-        // Set default roles/statuses
-        // Save to database
-        // Trigger events if needed
         return $user;
     }
     public function patch(User $user, string $property, string $value): User {
