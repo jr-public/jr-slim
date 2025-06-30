@@ -11,8 +11,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
-class AuthMiddleware implements MiddlewareInterface
+class AuthenticationMiddleware implements MiddlewareInterface
 {
+
+    private array $no_auth_routes = [
+        '/guest'
+    ];
+
     private readonly UserRepository $user_repo;
 	private readonly TokenService $token_s;
     public function __construct(UserRepository $user_repo, TokenService $token_s)
@@ -23,6 +28,12 @@ class AuthMiddleware implements MiddlewareInterface
 
     public function process(Request $request, RequestHandler $handler): Response
     {
+        $request_path = $request->getUri()->getPath();
+        foreach ($this->no_auth_routes as $no_auth_route) {
+            if (str_starts_with($request_path, $no_auth_route)) {
+                return $handler->handle($request);
+            }
+        }
         // 
         $client = $request->getAttribute('active_client');
 

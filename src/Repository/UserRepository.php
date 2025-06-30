@@ -26,14 +26,52 @@ class UserRepository extends EntityRepository {
         return $this->getEntityManager()->createQuery($dql)
             ->getArrayResult();
     }
-    // public function findActiveUsersByClient(Client $client): array
-    // {
-    //     return $this->createQueryBuilder('u')
-    //         ->where('u.client = :client')
-    //         ->andWhere('u.status = :status')
-    //         ->setParameter('client', $client)
-    //         ->setParameter('status', 'active')
-    //         ->getQuery()
-    //         ->getResult();
-    // }
+    public function findOneByFilters(array $options = []): User
+    {
+        $options['limit'] = 1;
+        $result = $this->findByFilters($options, false);
+        $user = $result[0] ?? null;
+        return $user;
+    }
+    public function findByFilters(array $options = [], bool $asArray = true): array
+    {
+        $qb = $this->createQueryBuilder('u'); // 'u' is the alias for the User entity
+
+        if (isset($options['id'])) {
+            $qb->andWhere('u.id = :id')
+                ->setParameter('id', (int) $options['id']);
+        }
+        if (isset($options['role'])) {
+            $qb->andWhere('u.role = :role')
+                ->setParameter('role', $options['role']);
+        }
+        if (isset($options['client_id'])) {
+            $qb->andWhere('u.client = :client_id')
+               ->setParameter('client_id', (int) $options['client_id']);
+        }
+        if (isset($options['limit'])) {
+            $qb->setMaxResults((int) $options['limit']);
+        }
+        if (isset($options['offset'])) {
+            $qb->setFirstResult((int) $options['offset']);
+        }
+        if (isset($options['order_by'])) {
+            $direction = isset($options['order_direction']) && strtoupper($options['order_direction']) === 'DESC' ? 'DESC' : 'ASC';
+            $qb->orderBy('u.' . $options['order_by'], $direction);
+        } else {
+            $qb->orderBy('u.created', 'DESC');
+        }
+
+        try {
+            $result = ($asArray) ? $qb->getQuery()->getArrayResult() : $qb->getQuery()->getResult();
+            return $result;
+        } catch (\Exception $e) {
+            // Log the error or throw a more specific exception
+            // In a real application, you'd want proper error handling.
+            throw new \RuntimeException('Failed to fetch users: ' . $e->getMessage());
+        }
+    }
+
+    // You might also implement a method to get the total count for pagination
+
 }

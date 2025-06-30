@@ -2,15 +2,27 @@
 namespace App\Service;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class UserService
 {
+    private readonly UserRepository $userRepo;
     private readonly EntityManagerInterface $entityManager;
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(UserRepository $userRepo, EntityManagerInterface $entityManager)
     {
+        $this->userRepo = $userRepo;
         $this->entityManager = $entityManager;
     }
+    // All select type queries should be filtered depending on the client and also the user role
+    public function get(int $id): User {
+        $options = ["id" => $id];
+        return $this->userRepo->findOneByFilters($options);
+    }
+    public function list(array $options = []): array {
+        return $this->userRepo->findByFilters($options);
+    }
+
     public function create(array $data): User {
         $user = new User();
         $user->setUsername($data['username']);
@@ -19,11 +31,6 @@ class UserService
         $user->setClient($data['client']);
         $this->entityManager->persist($user);
         $this->entityManager->flush();
-        // Validate (or delegate to validator)
-        // Hash password
-        // Set default roles/statuses
-        // Save to database
-        // Trigger events if needed
         return $user;
     }
     public function patch(User $user, string $property, string $value): User {

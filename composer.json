@@ -28,6 +28,7 @@
             "App\\Entity\\": "src/Entity/",
             "App\\Exception\\": "src/Exception/",
             "App\\Middleware\\": "src/Middleware/",
+            "App\\Permission\\": "src/Permission/",
             "App\\Repository\\": "src/Repository/",
             "App\\Service\\": "src/Service/"
         }
