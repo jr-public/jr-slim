@@ -20,6 +20,9 @@ class ClientMiddleware implements MiddlewareInterface
         $client = $this->client_repo->findOneBy([
             'domain' => $request->getUri()->getHost()
         ]);
+        if (!$client) {
+            throw new \Exception('Client not found');
+        }
         $request = $request->withAttribute('active_client', $client);
 
         // Invoke the next middleware and get response
