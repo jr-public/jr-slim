@@ -1,5 +1,6 @@
 <?php
 namespace App\Bootstrap;
+
 use App\Entity\Client;
 use App\Entity\User;
 use App\Repository\ClientRepository;
@@ -10,6 +11,10 @@ use DI\ContainerBuilder;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Slim\Psr7\Factory\ResponseFactory;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Validation;
+use App\Middleware\ValidationMiddleware;
+use Psr\Container\ContainerInterface;
 
 class DIContainerBootstrap {
     public static function create(): Container {
@@ -27,6 +32,22 @@ class DIContainerBootstrap {
             }),
             UserRepository::class => \DI\factory(function (EntityManagerInterface $em) {
                 return $em->getRepository(User::class);
+            }),
+            // VALIDATOR
+            ValidatorInterface::class => \DI\factory(function () {
+                return Validation::createValidatorBuilder()
+                    ->enableAttributeMapping()
+                    ->getValidator();
+            }),
+            // VALIDATION MIDDLEWARE FACTORY
+            'ValidationMiddlewareFactory' => \DI\factory(function (ContainerInterface $c) {
+                return function (string $dtoClass, array $validationGroups = []) use ($c) {
+                    return new ValidationMiddleware(
+                        $c->get(ValidatorInterface::class),
+                        $c->get($dtoClass),
+                        $validationGroups
+                    );
+                };
             }),
         ]);
         return $builder->build();

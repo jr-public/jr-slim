@@ -3,11 +3,14 @@ namespace App\Bootstrap;
 
 use App\Controller\AuthController;
 use App\Controller\UserController;
+use App\DTO\UserCreateDTO;
+use App\DTO\QueryBuilderDTO;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
 use App\Middleware\ClientMiddleware;
 use DI\Container;
 use DI\Bridge\Slim\Bridge;
+use Doctrine\DBAL\Query\QueryBuilder;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -35,13 +38,19 @@ class SlimBootstrap
 
     protected static function registerRoutes(App $app): void
     {
-        $app->group('/users', function (RouteCollectorProxy $group) {
-            $group->get('', [UserController::class, 'index']);      // GET /users: Get all users
-            $group->get('/', [UserController::class, 'index']);      // GET /users: Get all users
-            $group->get('/index', [UserController::class, 'index']);      // GET /users: Get all users
-            $group->post('', [UserController::class, 'create']);     // POST /users: Create a new user
-            $group->post('/', [UserController::class, 'create']);     // POST /users: Create a new user
-            $group->post('/create', [UserController::class, 'create']);     // POST /users: Create a new user
+        $validationMiddlewareFactory = $app->getContainer()->get('ValidationMiddlewareFactory');
+
+        $app->group('/users', function (RouteCollectorProxy $group) use ($validationMiddlewareFactory) {
+            // INDEX
+            foreach (['', '/', '/index'] as $path) {
+                $group->get($path, [UserController::class, 'index'])
+                    ->add($validationMiddlewareFactory(QueryBuilderDTO::class));
+            }
+            // CREATE
+            foreach (['', '/', '/create'] as $path) {
+                $group->post($path, [UserController::class, 'create'])
+                    ->add($validationMiddlewareFactory(UserCreateDTO::class));
+            }
             $group->get('/{id}', [UserController::class, 'get']);   // GET /users/{id}: Get a single user by ID
             $group->delete('/{id}', [UserController::class, 'delete']); // DELETE /users/{id}: Delete a user by ID
             $group->patch('/{id}', [UserController::class, 'patch']);   // PATCH /users/{id}: Partially update a user by ID

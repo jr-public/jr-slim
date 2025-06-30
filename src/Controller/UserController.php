@@ -13,7 +13,8 @@ class UserController {
     ) {}
     public function index(Request $request, Response $response): Response
     {
-        $options = $request->getAttribute('forced_filters');
+        $options = $request->getAttribute('dto')->toArray();
+        $options = array_merge($options, $request->getAttribute('forced_filters'));
         $users = $this->userService->list($options);
         return $this->responseService->success($response, $users);
     }
