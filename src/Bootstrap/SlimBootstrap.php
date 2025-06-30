@@ -17,30 +17,17 @@ class SlimBootstrap
     {
         $app = Bridge::create($container);
 
-        // self::registerSettings($app);
-        // self::registerDependencies($app);
         self::registerMiddleware($app);
         self::registerRoutes($app);
 
         return $app;
     }
 
-    // protected static function registerSettings(App $app): void
-    // {
-    //     // Optional: Load settings from file or env
-    //     $container = $app->getContainer();
-    //     // You could set settings like displayErrorDetails here
-    // }
-
-    // protected static function registerDependencies(App $app): void
-    // {
-    //     (require __DIR__ . '/../app/dependencies.php')($app);
-    // }
-
     protected static function registerMiddleware(App $app): void
     {
         $app->addBodyParsingMiddleware();
         $app->add(AuthorizationMiddleware::class);
+        $app->add(AuthenticationMiddleware::class);
         $app->addRoutingMiddleware();
         $app->add(ClientMiddleware::class);
         $app->addErrorMiddleware(true, true, true);
@@ -58,7 +45,7 @@ class SlimBootstrap
             $group->get('/{id}', [UserController::class, 'get']);   // GET /users/{id}: Get a single user by ID
             $group->delete('/{id}', [UserController::class, 'delete']); // DELETE /users/{id}: Delete a user by ID
             $group->patch('/{id}', [UserController::class, 'patch']);   // PATCH /users/{id}: Partially update a user by ID
-        })->add(AuthenticationMiddleware::class);
+        });
         $app->group('/clients', function (RouteCollectorProxy $group) {
             // $group->get('/', [ClientController::class, 'index']);      // GET /clients: Get all users
             // $group->post('/', [ClientController::class, 'store']);     // POST /clients: Create a new user
@@ -66,7 +53,7 @@ class SlimBootstrap
             // $group->put('/{id}', [ClientController::class, 'update']); // PUT /clients/{id}: Update a user by ID
             // $group->delete('/{id}', [ClientController::class, 'delete']); // DELETE /clients/{id}: Delete a user by ID
             // $group->patch('/{id}', [ClientController::class, 'patch']);   // PATCH /clients/{id}: Partially update a user by ID
-        })->add(AuthenticationMiddleware::class);
+        });
         $app->group('/guest', function (RouteCollectorProxy $group) {
             $group->post('/login', [AuthController::class, 'login']);
             $group->post('/register', [AuthController::class, 'register']);
