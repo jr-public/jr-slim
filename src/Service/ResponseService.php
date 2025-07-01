@@ -27,7 +27,7 @@ class ResponseService
             'class'     => get_class($exception),
             'file'      => $exception->getFile(),
             'line'      => $exception->getLine(),
-            'trace'     => $exception->getTraceAsString(),
+            'trace'     => $exception->getTrace(),
             'method'    => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
             'uri'       => $_SERVER['REQUEST_URI'] ?? 'unknown',
             'timestamp' => date('c')

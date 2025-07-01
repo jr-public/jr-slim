@@ -9,21 +9,21 @@ use App\DTO\QueryBuilderDTO;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
 use App\Middleware\ClientMiddleware;
+use App\Service\ResponseService;
 
 use DI\Container;
 use DI\Bridge\Slim\Bridge;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 class SlimBootstrap
 {
     public static function createApp(Container $container): App
     {
         $app = Bridge::create($container);
-
         self::registerMiddleware($app);
         self::registerRoutes($app);
-
         return $app;
     }
 
@@ -34,7 +34,8 @@ class SlimBootstrap
         $app->add(AuthenticationMiddleware::class);
         $app->addRoutingMiddleware();
         $app->add(ClientMiddleware::class);
-        $app->addErrorMiddleware(true, true, true);
+        $errorMiddleware = $app->addErrorMiddleware(true, true, true);
+        $errorMiddleware->setDefaultErrorHandler(self::getCustomErrorHandler($app)); 
     }
 
     protected static function registerRoutes(App $app): void
@@ -80,5 +81,21 @@ class SlimBootstrap
             // check username
             // check email
         });
+    }
+    protected static function getCustomErrorHandler(App $app): callable {
+        $customErrorHandler = function (
+            Request $request, // Must be the first parameter
+            \Throwable $exception, // Must be the second parameter
+            bool $displayErrorDetails, // Comes from errorMiddleware config
+            bool $logErrors, // Comes from errorMiddleware config
+            bool $logErrorDetails // Comes from errorMiddleware config
+        ) use ($app) { // Use $app to access the container or response factory
+            $responseService = $app->getContainer()->get(ResponseService::class);
+            $responseFactory = $app->getResponseFactory();
+            $response = $responseFactory->createResponse();
+            return $responseService->error($response, $exception); // The error method receives only the Throwable
+        };
+
+        return $customErrorHandler;
     }
 }   
