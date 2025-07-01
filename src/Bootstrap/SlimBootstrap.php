@@ -9,9 +9,9 @@ use App\DTO\QueryBuilderDTO;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
 use App\Middleware\ClientMiddleware;
+
 use DI\Container;
 use DI\Bridge\Slim\Bridge;
-use Doctrine\DBAL\Query\QueryBuilder;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
