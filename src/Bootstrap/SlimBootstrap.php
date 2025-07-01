@@ -4,6 +4,7 @@ namespace App\Bootstrap;
 use App\Controller\AuthController;
 use App\Controller\UserController;
 use App\DTO\UserCreateDTO;
+use App\DTO\UserPatchDTO;
 use App\DTO\QueryBuilderDTO;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
@@ -51,9 +52,12 @@ class SlimBootstrap
                 $group->post($path, [UserController::class, 'create'])
                     ->add($validationMiddlewareFactory(UserCreateDTO::class));
             }
+            // PATCH
+            $group->patch('/{id}', [UserController::class, 'patch'])
+                ->add($validationMiddlewareFactory(UserPatchDTO::class));
+            // GET and DELETE dont need extra validation
             $group->get('/{id}', [UserController::class, 'get']);   // GET /users/{id}: Get a single user by ID
             $group->delete('/{id}', [UserController::class, 'delete']); // DELETE /users/{id}: Delete a user by ID
-            $group->patch('/{id}', [UserController::class, 'patch']);   // PATCH /users/{id}: Partially update a user by ID
         });
         $app->group('/clients', function (RouteCollectorProxy $group) {
             // $group->get('/', [ClientController::class, 'index']);      // GET /clients: Get all users
@@ -63,9 +67,10 @@ class SlimBootstrap
             // $group->delete('/{id}', [ClientController::class, 'delete']); // DELETE /clients/{id}: Delete a user by ID
             // $group->patch('/{id}', [ClientController::class, 'patch']);   // PATCH /clients/{id}: Partially update a user by ID
         });
-        $app->group('/guest', function (RouteCollectorProxy $group) {
+        $app->group('/guest', function (RouteCollectorProxy $group) use ($validationMiddlewareFactory) {
             $group->post('/login', [AuthController::class, 'login']);
-            $group->post('/register', [AuthController::class, 'register']);
+            $group->post('/register', [AuthController::class, 'register'])
+                ->add($validationMiddlewareFactory(UserCreateDTO::class));
             // $group->get('/profile', [UserController::class, 'profile']);
             // $group->get('/forgot-password', [UserController::class, 'forgotPassword']);
             // $group->post('/reset-password', [UserController::class, 'resetPassword']);

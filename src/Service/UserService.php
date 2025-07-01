@@ -33,16 +33,17 @@ class UserService
         $this->entityManager->flush();
         return $user;
     }
-    public function patch(User $user, string $property, string $value): User {
-        if (!$user->has($property)) {
-            throw new \Exception("USER SERVICE - PATCH - PROPERTY NOT FOUND");
-        }
-        if ($property == 'password') {
-            $user->setPassword($value);
-        } else if ($property == 'email') {
-            $user->setEmail($value);
-        } else {
-            throw new \Exception("USER SERVICE - PATCH - PROPERTY NOT IMPLEMENTED FOR PATCHING");
+    public function patch(array $data): User {
+        $user       = $data['user'];
+        $property   = $data['property'];
+        $value      = $data['value'];
+        switch ($property) {
+            case 'password':
+                $user->setPassword($value);
+                break;
+            case 'email':
+                $user->setEmail($value);
+                break;
         }
         $this->entityManager->persist($user);
         $this->entityManager->flush();

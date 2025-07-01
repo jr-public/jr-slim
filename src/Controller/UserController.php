@@ -33,8 +33,8 @@ class UserController {
     public function patch(Request $request, Response $response, int $id): Response
     {
         $data = $request->getParsedBody();
-        $user = $request->getAttribute('target_user');
-        $user = $this->userService->patch($user, $data['property'], $data['value']);
+        $data['user'] = $request->getAttribute('target_user');
+        $user = $this->userService->patch($data);
         return $this->responseService->success($response, $user->toArray());
     }
     public function delete(Request $request, Response $response, int $id): Response

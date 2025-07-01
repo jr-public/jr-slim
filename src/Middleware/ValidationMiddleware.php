@@ -5,11 +5,12 @@ namespace App\Middleware;
 use App\DTO\DataTransferObjectInterface;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class ValidationMiddleware
+class ValidationMiddleware implements MiddlewareInterface
 {
     private ValidatorInterface $validator;
     private DataTransferObjectInterface $dto;
@@ -36,7 +37,7 @@ class ValidationMiddleware
 
 		return $errors;
 	}
-    public function __invoke(Request $request, RequestHandler $handler): Response
+    public function process(Request $request, RequestHandler $handler): Response
     {
         $data = $request->getParsedBody();
 		if (!empty($data)) foreach ($data as $key => $value) {
@@ -49,6 +50,11 @@ class ValidationMiddleware
             throw new \Exception(json_encode($this->formatViolations($violations)));
         }
         $request = $request->withAttribute('dto', $this->dto);
-        return $handler->handle($request);
+
+        // Invoke the next middleware and get response
+        $response = $handler->handle($request);
+
+		//
+        return $response;
     }
 }
