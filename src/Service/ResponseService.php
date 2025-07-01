@@ -1,7 +1,7 @@
 <?php
 namespace App\Service;
+
 use Psr\Http\Message\ResponseInterface as Response;
-use Throwable;
 
 class ResponseService
 {
@@ -16,7 +16,7 @@ class ResponseService
         $response->getBody()->write($json);
         return $response->withHeader('Content-Type', 'application/json');
     }
-    public function error(Response $response, Throwable $exception): Response
+    public function error(Response $response, \Throwable $exception): Response
     {
         $_response = [
             'success'   => false,
@@ -36,53 +36,4 @@ class ResponseService
         $response->getBody()->write($json);
         return $response->withHeader('Content-Type', 'application/json');
     }
-
-    // public function error(\Throwable $exception): array
-    // {
-    //     $response = [
-    //         'success'   => false,
-    //         'data'      => null,
-    //         'error'     => $exception->getMessage()
-    //     ];
-    //     if (true) { // if ($this->debugMode) {
-    //         $response['error'] = [
-    //             'class'     => get_class($exception),
-    //             'file'      => $exception->getFile(),
-    //             'line'      => $exception->getLine(),
-    //             'trace'     => $exception->getTraceAsString(),
-    //             'method'    => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
-    //             'uri'       => $_SERVER['REQUEST_URI'] ?? 'unknown',
-    //             'timestamp' => date('c')
-    //         ];
-    //     }
-    //     return $response;
-    // }
-    // public function success($data = null): array
-    // {
-    //     return [
-    //         'success'   => true,
-    //         'data'      => $data,
-    //         'error'     => null
-    //     ];
-    // }
-    // public function error(\Throwable $exception): array
-    // {
-    //     $response = [
-    //         'success'   => false,
-    //         'data'      => null,
-    //         'error'     => $exception->getMessage()
-    //     ];
-    //     if (true) { // if ($this->debugMode) {
-    //         $response['error'] = [
-    //             'class'     => get_class($exception),
-    //             'file'      => $exception->getFile(),
-    //             'line'      => $exception->getLine(),
-    //             'trace'     => $exception->getTraceAsString(),
-    //             'method'    => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
-    //             'uri'       => $_SERVER['REQUEST_URI'] ?? 'unknown',
-    //             'timestamp' => date('c')
-    //         ];
-    //     }
-    //     return $response;
-    // }
 }

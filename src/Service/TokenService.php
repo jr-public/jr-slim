@@ -13,9 +13,7 @@ class TokenService
 
         $jwtPayload = array_merge($payload, [
             'iat' => $now->getTimestamp(),
-            'exp' => $expiration->getTimestamp(),
-            // 'iss' => $this->issuer,
-            // 'aud' => $this->audience,
+            'exp' => $expiration->getTimestamp()
         ]);
         return JWT::encode($jwtPayload, getenv('JWT_SECRET'), getenv('JWT_ALGO'));
     }
