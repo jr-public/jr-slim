@@ -14,7 +14,7 @@ class UserService
         $this->userRepo = $userRepo;
         $this->entityManager = $entityManager;
     }
-    // All select type queries should be filtered depending on the client and also the user role
+    
     public function get(int $id): User {
         $options = ["id" => $id];
         return $this->userRepo->findOneByFilters($options);

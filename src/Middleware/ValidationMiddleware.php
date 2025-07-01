@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Middleware;
 
 use App\DTO\DataTransferObjectInterface;
+use App\Exception\ValidationException;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -12,18 +12,30 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ValidationMiddleware implements MiddlewareInterface
 {
-    private ValidatorInterface $validator;
-    private DataTransferObjectInterface $dto;
-    // private array $validationGroups;
-
     public function __construct(
-        ValidatorInterface $validator,
-        DataTransferObjectInterface $dto,
-    ) {
-        $this->validator = $validator;
-        $this->dto = $dto;
-    }
+        private ValidatorInterface $validator,
+        private DataTransferObjectInterface $dto
+    ) {}
+    public function process(Request $request, RequestHandler $handler): Response
+    {
+        $data = $request->getParsedBody();
+		if (!empty($data)) foreach ($data as $key => $value) {
+			if (property_exists($this->dto, $key)) {
+				$this->dto->$key = $value;
+			}
+		}
+        $violations = $this->validator->validate($this->dto, null);
+        if (count($violations) > 0) {
+            throw new ValidationException('VALIDATION_ERROR', json_encode($this->formatViolations($violations)));
+        }
+        $request = $request->withAttribute('dto', $this->dto);
 
+        // Invoke the next middleware and get response
+        $response = $handler->handle($request);
+
+		//
+        return $response;
+    }
 	function formatViolations($violations): array
 	{
 		$errors = [];
@@ -37,24 +49,4 @@ class ValidationMiddleware implements MiddlewareInterface
 
 		return $errors;
 	}
-    public function process(Request $request, RequestHandler $handler): Response
-    {
-        $data = $request->getParsedBody();
-		if (!empty($data)) foreach ($data as $key => $value) {
-			if (property_exists($this->dto, $key)) {
-				$this->dto->$key = $value;
-			}
-		}
-        $violations = $this->validator->validate($this->dto, null);
-        if (count($violations) > 0) {
-            throw new \Exception(json_encode($this->formatViolations($violations)));
-        }
-        $request = $request->withAttribute('dto', $this->dto);
-
-        // Invoke the next middleware and get response
-        $response = $handler->handle($request);
-
-		//
-        return $response;
-    }
 }
