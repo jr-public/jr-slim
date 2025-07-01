@@ -1,8 +1,10 @@
 <?php
 namespace App\Middleware;
 
+use App\Exception\AuthException;
 use App\Permission\UserPermission;
 use App\Repository\UserRepository;
+
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\MiddlewareInterface;
@@ -12,43 +14,44 @@ use Slim\Routing\RouteContext;
 class AuthorizationMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        // private readonly EntityManagerInterface $em,
         private readonly UserRepository $userRepository,
         private readonly UserPermission $userPermission
     ) {}
 
     public function process(Request $request, RequestHandler $handler): Response
     {
+        // Route leads us to the controller and its method
+        $route      = RouteContext::fromRequest($request);
+        $route      = $route->getRoute();
+        $callable   = $route->getCallable();
+        $arguments  = $route->getArguments();
+        // Store users involved for authorization
         $activeUser = $request->getAttribute('active_user');
-        $targetUser = null;
-        
-        $routeContext = RouteContext::fromRequest($request);
-        $route = $routeContext->getRoute();
+        $targetUser = null; // Target user might not be used, depending on the action
 
-        // CONTROLLER / METHOD PERMISSIONS
-        // Assume all my callables are arrays that contain ["App\\Controller\\ControllerName","methodName"]
-        $callable = $route->getCallable();
+        // Authorization for UserController methods
+        // Most likely to change when new controllers are implemented
         if ($callable[0] == "App\Controller\UserController") {
+            // If any user querying is involved in the action, these filters will
+            // be applied in the Controller
             $forcedFilters = $this->userPermission->getForcedFilters($activeUser);
             $request = $request->withAttribute('forced_filters', $forcedFilters);
-            
-            // USER MANAGEMENT PERMISSIONS
-            $route_arguments = $route->getArguments();
-            if (key_exists('id', $route_arguments)) {
-                $options = ['id' => $route_arguments['id']];
+            // Checks if there's a target user and if valid, stores it in the request
+            if (key_exists('id', $arguments)) {
+                $options = ['id' => $arguments['id']];
                 $options = array_merge($options, $request->getAttribute('forced_filters'));
                 $targetUser = $this->userRepository->findOneByFilters($options);
                 if (!$targetUser) {
-                    throw new \Exception('Target user not found during authorization process');
+                    throw new AuthException('NOT_FOUND', 'Target user not found during authorization process');
                 }
                 if (!$this->userPermission->canUserManageUser($activeUser, $targetUser)) {
-                    throw new \Exception('Not allowed to manage that user');
+                    throw new AuthException('WRONG_USER', 'Not allowed to manage that user');
                 }
                 $request = $request->withAttribute('target_user', $targetUser);
             }
-            
+            // Checks business rules for action authorization
             if (!$this->userPermission->canUserCallMethod($callable[1], $activeUser, $targetUser)) {
-                throw new \Exception("Not allowed to use that controller method");
+                throw new AuthException('WRONG_METHOD', 'Not allowed to use that controller method');
             }
         }
 
