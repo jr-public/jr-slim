@@ -1,6 +1,8 @@
 <?php
 namespace App\Service;
 
+use App\Exception\ApiException;
+
 use Psr\Http\Message\ResponseInterface as Response;
 
 class ResponseService
@@ -27,11 +29,15 @@ class ResponseService
             'class'     => get_class($exception),
             'file'      => $exception->getFile(),
             'line'      => $exception->getLine(),
+            // 'trace'     => $exception->getTraceAsString(),
             'trace'     => $exception->getTrace(),
             'method'    => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
             'uri'       => $_SERVER['REQUEST_URI'] ?? 'unknown',
             'timestamp' => date('c')
         ];
+        if ( $exception instanceof ApiException ) {
+            $_response['error']['detail'] = $exception->getDetail();
+        }
         $json = json_encode($_response);
         $response->getBody()->write($json);
         return $response->withHeader('Content-Type', 'application/json');
