@@ -15,6 +15,7 @@ use DI\Container;
 use DI\Bridge\Slim\Bridge;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
+use Slim\Psr7\Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 class SlimBootstrap
@@ -24,9 +25,9 @@ class SlimBootstrap
         $app = Bridge::create($container);
         self::registerMiddleware($app);
         self::registerRoutes($app);
+        self::enableCors($app);
         return $app;
     }
-
     protected static function registerMiddleware(App $app): void
     {
         $app->addBodyParsingMiddleware();
@@ -40,8 +41,14 @@ class SlimBootstrap
 
     protected static function registerRoutes(App $app): void
     {
+        $app->options('/{routes:.+}', function ($request, $response, $args) {
+            error_log("OPTIONS request received");
+            return $response;
+        });
+
         $validationMiddlewareFactory = $app->getContainer()->get('ValidationMiddlewareFactory');
 
+        //
         $app->group('/users', function (RouteCollectorProxy $group) use ($validationMiddlewareFactory) {
             // INDEX
             foreach (['', '/', '/index'] as $path) {
@@ -97,5 +104,28 @@ class SlimBootstrap
         };
 
         return $customErrorHandler;
+    }
+    protected static function enableCors(App $app): void
+    {
+        $app->add(function ($request, $handler) {
+            $allow_origin = '*';
+            $allow_headers = 'X-Requested-With, Content-Type, Accept, Origin, Authorization';
+            if ($request->getMethod() === 'OPTIONS') {
+                $response = new Response();
+                return $response
+                    ->withHeader('Access-Control-Allow-Origin', $allow_origin)
+                    ->withHeader('Access-Control-Allow-Headers', $allow_headers)
+                    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+                    ->withHeader('Access-Control-Allow-Credentials', 'true')
+                    ->withStatus(200);
+            }
+            $response = $handler->handle($request);
+            return $response
+                    ->withHeader('Access-Control-Allow-Origin', $allow_origin)
+                    ->withHeader('Access-Control-Allow-Headers', $allow_headers)
+                    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+                    ->withHeader('Access-Control-Allow-Credentials', 'true');
+
+        });
     }
 }   

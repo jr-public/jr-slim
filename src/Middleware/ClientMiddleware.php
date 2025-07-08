@@ -17,11 +17,13 @@ class ClientMiddleware implements MiddlewareInterface
 
     public function process(Request $request, RequestHandler $handler): Response
     {
+        // used to be //$request->getUri()->getHost() but i changed the approach
+        // for now multi-tenancy is disabled
         $client = $this->client_repo->findOneBy([
-            'domain' => $request->getUri()->getHost()
-        ]);
+            'domain' => 'localhost'
+        ]); 
         if (!$client) {
-            throw new AuthException('NOT_FOUND', 'Client not found');
+            throw new AuthException('NOT_FOUND', 'Client not found. input: '.$request->getUri()->getHost());
         }
         $request = $request->withAttribute('active_client', $client);
 
