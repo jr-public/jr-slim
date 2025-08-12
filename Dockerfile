@@ -11,6 +11,8 @@ RUN docker-php-ext-install pdo pdo_pgsql
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /var/log/jr-slim && chown www-data:www-data /var/log/jr-slim
+
 RUN a2enmod rewrite
 COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
 

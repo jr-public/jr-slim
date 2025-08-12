@@ -6,9 +6,11 @@ use App\Controller\UserController;
 use App\DTO\UserCreateDTO;
 use App\DTO\UserPatchDTO;
 use App\DTO\QueryBuilderDTO;
+use App\Exception\ApiException;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
 use App\Middleware\ClientMiddleware;
+use App\Service\LogService;
 use App\Service\ResponseService;
 
 use DI\Container;
@@ -42,7 +44,6 @@ class SlimBootstrap
     protected static function registerRoutes(App $app): void
     {
         $app->options('/{routes:.+}', function ($request, $response, $args) {
-            error_log("OPTIONS request received");
             return $response;
         });
 
@@ -91,16 +92,23 @@ class SlimBootstrap
     }
     protected static function getCustomErrorHandler(App $app): callable {
         $customErrorHandler = function (
-            Request $request, // Must be the first parameter
-            \Throwable $exception, // Must be the second parameter
-            bool $displayErrorDetails, // Comes from errorMiddleware config
-            bool $logErrors, // Comes from errorMiddleware config
-            bool $logErrorDetails // Comes from errorMiddleware config
-        ) use ($app) { // Use $app to access the container or response factory
-            $responseService = $app->getContainer()->get(ResponseService::class);
-            $responseFactory = $app->getResponseFactory();
-            $response = $responseFactory->createResponse();
-            return $responseService->error($response, $exception); // The error method receives only the Throwable
+            Request $request,
+            \Throwable $exception,
+            // These come from errorMiddleware config
+            bool $displayErrorDetails, 
+            bool $logErrors,
+            bool $logErrorDetails
+        ) use ($app) {
+            $response   = $app->getResponseFactory()->createResponse();
+            $resService = $app->getContainer()->get(ResponseService::class);
+            // Logs uncaught exceptions
+            if (!$exception instanceof ApiException) {
+                $logService = $app->getContainer()->get(LogService::class);
+                $logService->uncaught($request, $exception);
+                return $resService->error($response, $exception);
+            }
+            // If its an ApiException we can return a properly formatted error response
+            return $resService->error($response, $exception);
         };
 
         return $customErrorHandler;

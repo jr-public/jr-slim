@@ -10,6 +10,7 @@ services:
       - ./composer.json:/var/www/html/composer.json
       - ./composer.lock:/var/www/html/composer.lock
       - vendor_data:/var/www/html/vendor
+      - logs:/var/log/jr-slim
 
       - ./bin:/var/www/html/bin
       - ./config:/var/www/html/config
@@ -49,6 +50,7 @@ services:
 volumes:
   db_data:
   vendor_data:
+  logs:
 
 networks:
   app-network:
