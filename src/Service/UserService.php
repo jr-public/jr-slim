@@ -28,8 +28,12 @@ class UserService
         }
         return $user;
     }
-    public function get(int $id): User {
+    public function get(int $id): ?User {
         $options = ["id" => $id];
+        return $this->userRepo->findOneByFilters($options);
+    }
+    public function getByEmail(string $email): ?User {
+        $options = ["email" => $email];
         return $this->userRepo->findOneByFilters($options);
     }
     public function list(array $options = []): array {

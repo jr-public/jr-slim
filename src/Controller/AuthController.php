@@ -36,4 +36,15 @@ class AuthController {
         ]);
         return $this->responseService->success($response, ['token' => $token, 'user' => $user->toArray()]);
     }
+    public function forgotPassword(Request $request, Response $response): Response {
+        $data   = $request->getParsedBody();
+        $user = $this->userService->getByEmail($data['email']);
+        if ($user) {
+            // Create temporary token
+            // Send email (Add to queue?)
+        }
+        // We always return a success, users shouldn't know if emails are in use or not
+        // Email sending should be done on a queue so timing is not a factor in this response
+        return $this->responseService->success($response);
+    }
 }

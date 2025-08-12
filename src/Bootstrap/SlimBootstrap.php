@@ -81,7 +81,7 @@ class SlimBootstrap
             $group->post('/register', [AuthController::class, 'register'])
                 ->add($validationMiddlewareFactory(UserCreateDTO::class));
             // $group->get('/profile', [UserController::class, 'profile']);
-            // $group->get('/forgot-password', [UserController::class, 'forgotPassword']);
+            $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
             // $group->post('/reset-password', [UserController::class, 'resetPassword']);
             // $group->get('/verify-email', [UserController::class, 'verifyEmail']);
             // $group->get('/resend-verification', [UserController::class, 'resendVerification']);
