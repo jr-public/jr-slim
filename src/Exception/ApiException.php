@@ -15,6 +15,9 @@ class ApiException extends \Exception {
     }
 
     public function getDetail(): ?string {
+        if (empty($this->detail)) {
+            return $this->message;
+        }
         return $this->detail;
     }
     public function getHttpStatus(): int {

@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Middleware\ValidationMiddleware;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
+use App\Service\LogService;
 use App\Service\TokenService;
 use DI\Container;
 use DI\ContainerBuilder;
