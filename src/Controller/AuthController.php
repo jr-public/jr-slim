@@ -11,13 +11,11 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class AuthController {
     private readonly ResponseService $responseService;
-    private readonly UserRepository $userRepo;
     private readonly TokenService $tokenService;
     private readonly UserService $userService;
-    public function __construct(UserService $userService, ResponseService $responseService, UserRepository $userRepo, TokenService $tokenService) {
+    public function __construct(UserService $userService, ResponseService $responseService, TokenService $tokenService) {
         $this->userService = $userService;
         $this->responseService = $responseService;
-        $this->userRepo = $userRepo;
         $this->tokenService = $tokenService;
     }
     public function register(Request $request, Response $response): Response {
@@ -30,13 +28,8 @@ class AuthController {
     {
         $data   = $request->getParsedBody();
         $client = $request->getAttribute('active_client');
-        $user   = $this->userRepo->findByUsernameAndClient($data['username'], $client->get('id'));
-        if (!$user) {
-            throw new \Exception('BAD_CREDENTIALS, Invalid username');
-        } elseif (!password_verify($data['password'], $user->get('password'))) { // 
-            throw new \Exception('BAD_CREDENTIALS, Invalid password'.json_encode([$data['password'], $user->get('password')]));
-        }
-        $token = $this->tokenService->create([
+        $user   = $this->userService->login($client, $data['username'], $data['password']);
+        $token  = $this->tokenService->create([
             'sub'       => $user->get('id'),
             'client_id' => $client->get('id'),
             'type'      => 'session'

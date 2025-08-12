@@ -2,8 +2,11 @@
 namespace App\Service;
 
 use App\Entity\User;
+use App\Entity\Client;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+
+use App\Exception\AuthException;
 
 class UserService
 {
@@ -15,6 +18,16 @@ class UserService
         $this->entityManager = $entityManager;
     }
     
+    public function login(Client $client, string $username, string $password): User
+    {
+        $user   = $this->userRepo->findByUsernameAndClient($username, $client->get('id'));
+        if (!$user) {
+            throw new AuthException('BAD_CREDENTIALS, Invalid username');
+        } elseif (!password_verify($password, $user->get('password'))) { // 
+            throw new AuthException('BAD_CREDENTIALS, Invalid password'.json_encode([$password, $user->get('password')]));
+        }
+        return $user;
+    }
     public function get(int $id): User {
         $options = ["id" => $id];
         return $this->userRepo->findOneByFilters($options);
