@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Middleware\ValidationMiddleware;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
+use App\Service\EmailService;
 use App\Service\LogService;
 use App\Service\TokenService;
 use DI\Container;
@@ -26,7 +27,16 @@ class DIContainerBootstrap {
             TokenService::class => \DI\autowire()
                 ->constructorParameter('secret', \DI\env('JWT_SECRET'))
                 ->constructorParameter('algorithm', \DI\env('JWT_ALGO')),
-
+            EmailService::class => \DI\factory(function () {
+                return new EmailService(
+                    getenv('MAIL_HOST'),
+                    (int) (getenv('MAIL_PORT')),
+                    getenv('MAIL_USERNAME'),
+                    getenv('MAIL_PASSWORD'),
+                    getenv('MAIL_FROM_EMAIL'),
+                    getenv('MAIL_FROM_NAME')
+                );
+            }),
             EntityManagerInterface::class => \DI\factory(function () {
                 return DoctrineBootstrap::create();
             }),
