@@ -4,6 +4,7 @@ namespace App\Service;
 use App\Entity\User;
 use App\Entity\Client;
 use App\Repository\UserRepository;
+use App\Service\EmailService;
 use App\Service\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -14,11 +15,19 @@ class UserService
     private readonly UserRepository $userRepo;
     private readonly EntityManagerInterface $entityManager;
     private readonly TokenService $tokenService;
-    public function __construct(UserRepository $userRepo, EntityManagerInterface $entityManager, TokenService $tokenService)
+    private readonly EmailService $emailService;
+
+    public function __construct(
+        UserRepository $userRepo, 
+        EntityManagerInterface $entityManager, 
+        TokenService $tokenService,
+        EmailService $emailService
+    )
     {
         $this->userRepo = $userRepo;
         $this->entityManager = $entityManager;
         $this->tokenService = $tokenService;
+        $this->emailService = $emailService;
     }
     
     public function login(Client $client, string $username, string $password): array
@@ -85,7 +94,7 @@ class UserService
         $this->entityManager->flush();
         return $user;
     }
-    public function forgotPassword(string $email): array
+    public function forgotPassword(string $email): void
     {
         $user = $this->getByEmail($email);
         if ($user) {
@@ -95,13 +104,8 @@ class UserService
                 'type'  => 'forgot-password'
             ], 30);
             // Send email; Should be done on a queue so timing is not a factor in this response
+            $this->emailService->sendPasswordResetEmail($user->get('email'), $user->get('username'), $token);
         }
-        // This is strictly for dev purposes, if we are not returning $token then we dont need this
-        else $token = "DEV";
-        // SHOULD NOT BE RETURNING THE TOKEN, COULD BE JUST VOID
-        return [
-            'token' => $token
-        ];
     }
     public function resetPassword(string $token, string $password): void
     {
