@@ -26,7 +26,7 @@ class UserRepository extends EntityRepository {
         return $this->getEntityManager()->createQuery($dql)
             ->getArrayResult();
     }
-    public function findOneByFilters(array $options = []): User
+    public function findOneByFilters(array $options = []): ?User
     {
         $options['limit'] = 1;
         $result = $this->findByFilters($options, false);
@@ -41,9 +41,13 @@ class UserRepository extends EntityRepository {
             $qb->andWhere('u.id = :id')
                 ->setParameter('id', (int) $options['id']);
         }
+        if (isset($options['email'])) {
+            $qb->andWhere('u.email = :email')
+                ->setParameter('email', (string) $options['email']);
+        }
         if (isset($options['role'])) {
             $qb->andWhere('u.role = :role')
-                ->setParameter('role', $options['role']);
+                ->setParameter('role', (string) $options['role']);
         }
         if (isset($options['client_id'])) {
             $qb->andWhere('u.client = :client_id')

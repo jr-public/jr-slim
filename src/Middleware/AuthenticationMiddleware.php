@@ -44,6 +44,9 @@ class AuthenticationMiddleware implements MiddlewareInterface
         }
         $token = substr($authHeader, 7);
         $decoded = $this->token_s->decode($token);
+        if (!isset($decoded->type) || $decoded->type != 'session') {
+            throw new AuthException('BAD_TOKEN', 'Invalid token: wrong token type');
+        }
         if (!isset($decoded->sub)) {
             throw new AuthException('BAD_TOKEN', 'Invalid token: missing user identifier');
         }
