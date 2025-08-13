@@ -6,6 +6,7 @@ use App\Controller\UserController;
 use App\DTO\UserCreateDTO;
 use App\DTO\UserPatchDTO;
 use App\DTO\QueryBuilderDTO;
+use App\DTO\ResetPasswordDTO;
 use App\Exception\ApiException;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
@@ -82,7 +83,8 @@ class SlimBootstrap
                 ->add($validationMiddlewareFactory(UserCreateDTO::class));
             // $group->get('/profile', [UserController::class, 'profile']);
             $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
-            // $group->post('/reset-password', [UserController::class, 'resetPassword']);
+            $group->post('/reset-password', [AuthController::class, 'resetPassword'])
+                ->add($validationMiddlewareFactory(ResetPasswordDTO::class));
             // $group->get('/verify-email', [UserController::class, 'verifyEmail']);
             // $group->get('/resend-verification', [UserController::class, 'resendVerification']);
             // $group->get('/change-password', [UserController::class, 'changePassword']);

@@ -36,19 +36,23 @@ class UserService
         ]);
         return ['token' => $token, 'user' => $user->toArray()];
     }
-    public function get(int $id): ?User {
+    public function get(int $id): ?User
+    {
         $options = ["id" => $id];
         return $this->userRepo->findOneByFilters($options);
     }
-    public function getByEmail(string $email): ?User {
+    public function getByEmail(string $email): ?User
+    {
         $options = ["email" => $email];
         return $this->userRepo->findOneByFilters($options);
     }
-    public function list(array $options = []): array {
+    public function list(array $options = []): array
+    {
         return $this->userRepo->findByFilters($options);
     }
 
-    public function create(array $data): User {
+    public function create(array $data): User
+    {
         $user = new User();
         $user->setUsername($data['username']);
         $user->setEmail($data['email']);
@@ -58,7 +62,8 @@ class UserService
         $this->entityManager->flush();
         return $user;
     }
-    public function patch(array $data): User {
+    public function patch(array $data): User
+    {
         $user       = $data['user'];
         $property   = $data['property'];
         $value      = $data['value'];
@@ -74,19 +79,19 @@ class UserService
         $this->entityManager->flush();
         return $user;
     }
-    public function delete(User $user): User {
+    public function delete(User $user): User
+    {
         $this->entityManager->remove($user);
         $this->entityManager->flush();
         return $user;
     }
-    public function forgotPassword(string $email): array {
-
+    public function forgotPassword(string $email): array
+    {
         $user = $this->getByEmail($email);
         if ($user) {
             // Create temporary token
             $token  = $this->tokenService->create([
                 'sub'   => $user->get('id'),
-                // 'email' => $user->get('email'),
                 'type'  => 'forgot-password'
             ], 30);
             // Send email; Should be done on a queue so timing is not a factor in this response
@@ -100,12 +105,9 @@ class UserService
     }
     public function resetPassword(string $token, string $password): void
     {
-        $decoded = $this->tokenService->decode($token);
-        if ($decoded->type != 'forgot-password') {
-            throw new AuthException('INVALID_TOKEN_TYPE @ UserService->resetPassword');
-        }
-        $user = $this->patch([
-            'user'      => $this->get($decoded->sub),
+        $user = $this->tokenService->verify($token, 'forgot-password');
+        $this->patch([
+            'user'      => $user,
             'property'  => 'password',
             'value'     => $password
         ]);
