@@ -86,7 +86,7 @@ class UserService
             // Create temporary token
             $token  = $this->tokenService->create([
                 'sub'   => $user->get('id'),
-                'email' => $user->get('email'),
+                // 'email' => $user->get('email'),
                 'type'  => 'forgot-password'
             ], 30);
             // Send email; Should be done on a queue so timing is not a factor in this response
@@ -97,5 +97,17 @@ class UserService
         return [
             'token' => $token
         ];
+    }
+    public function resetPassword(string $token, string $password): void
+    {
+        $decoded = $this->tokenService->decode($token);
+        if ($decoded->type != 'forgot-password') {
+            throw new AuthException('INVALID_TOKEN_TYPE @ UserService->resetPassword');
+        }
+        $user = $this->patch([
+            'user'      => $this->get($decoded->sub),
+            'property'  => 'password',
+            'value'     => $password
+        ]);
     }
 }

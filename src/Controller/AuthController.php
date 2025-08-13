@@ -10,11 +10,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class AuthController {
     private readonly ResponseService $responseService;
     private readonly UserService $userService;
-    public function __construct(UserService $userService, ResponseService $responseService) {
+    public function __construct(UserService $userService, ResponseService $responseService)
+    {
         $this->userService = $userService;
         $this->responseService = $responseService;
     }
-    public function register(Request $request, Response $response): Response {
+    public function register(Request $request, Response $response): Response
+    {
         $data = $request->getParsedBody();
         $data['client'] = $request->getAttribute('active_client');
         $user = $this->userService->create($data);
@@ -27,11 +29,18 @@ class AuthController {
         $login  = $this->userService->login($client, $data['username'], $data['password']);
         return $this->responseService->success($response, $login);
     }
-    public function forgotPassword(Request $request, Response $response): Response {
+    public function forgotPassword(Request $request, Response $response): Response
+    {
         $data   = $request->getParsedBody();
         $forgot = $this->userService->forgotPassword($data['email']);
         // We always return a success, users shouldn't know if emails are in use or not
         // SHOULD NOT BE RETURNING THE TOKEN
         return $this->responseService->success($response, $forgot); 
+    }
+    public function resetPassword(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody();
+        $this->userService->resetPassword($data['token'], $data['password']);
+        return $this->responseService->success($response);
     }
 }
