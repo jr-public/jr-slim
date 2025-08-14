@@ -104,7 +104,7 @@ class UserService
     public function forgotPassword(string $email): void
     {
         $user = $this->getByEmail($email);
-        if ($user) {
+        if ($user && $user->get('status') === 'active') {
             // Create temporary token
             $token  = $this->tokenService->create([
                 'sub'   => $user->get('id'),
