@@ -31,10 +31,11 @@ class TokenService
         $expiration = $now->modify("+$expirationMinutes minutes");
         // Session tokens are not stored in db. Other tokens are.
         if ($payload['type'] !== 'session') {
-            $id     = bin2hex(random_bytes(16)); // 128-bit ID
-            $secret = $this->random(32);         // 256-bit secret
+            $id     = $this->random(16, 'hex');      // 128-bit ID as hex
+            $secret = $this->random(32, 'urlsafe'); // 256-bit secret, URL-safe
             $hash   = password_hash($secret, PASSWORD_DEFAULT);
             $token  = $id.'.'.$secret;
+            
             $userRef        = $this->entityManager->getReference(User::class, $payload['sub']);
             $tokenEntity    = new Token($id, $userRef, $payload['type'], $hash, $expiration);
             $this->entityManager->persist($tokenEntity);
@@ -51,10 +52,29 @@ class TokenService
         }
         return $token;
     }
-    function random(int $length = 32): string
+    /**
+     * Generate cryptographically secure random data
+     * 
+     * @param int $length Number of random bytes to generate
+     * @param string $encoding Output encoding: 'hex', 'base64', 'urlsafe', or 'raw'
+     * @return string
+     * @throws \Exception if random_bytes fails
+     */
+    public function random(int $length = 32, string $encoding = 'urlsafe'): string
     {
+        if ($length < 1) {
+            throw new \InvalidArgumentException('Length must be at least 1');
+        }
+
         $bytes = random_bytes($length);
-        return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+        
+        return match($encoding) {
+            'hex'     => bin2hex($bytes),
+            'base64'  => base64_encode($bytes),
+            'urlsafe' => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '='),
+            'raw'     => $bytes,
+            default   => throw new \InvalidArgumentException("Invalid encoding: $encoding")
+        };
     }
     public function decode(string $token): object
     {
