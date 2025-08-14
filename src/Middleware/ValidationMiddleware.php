@@ -18,8 +18,14 @@ class ValidationMiddleware implements MiddlewareInterface
     ) {}
     public function process(Request $request, RequestHandler $handler): Response
     {
-        $data = $request->getParsedBody();
-		if (!empty($data)) foreach ($data as $key => $value) {
+        $query = $request->getQueryParams();
+		if (!empty($query)) foreach ($query as $key => $value) {
+			if (property_exists($this->dto, $key)) {
+				$this->dto->$key = $value;
+			}
+		}
+		$body = $request->getParsedBody();
+		if (!empty($body)) foreach ($body as $key => $value) {
 			if (property_exists($this->dto, $key)) {
 				$this->dto->$key = $value;
 			}

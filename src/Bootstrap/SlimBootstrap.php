@@ -3,6 +3,7 @@ namespace App\Bootstrap;
 
 use App\Controller\AuthController;
 use App\Controller\UserController;
+use App\DTO\ActivateAccountDTO;
 use App\DTO\UserCreateDTO;
 use App\DTO\UserPatchDTO;
 use App\DTO\QueryBuilderDTO;
@@ -85,7 +86,8 @@ class SlimBootstrap
             $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
             $group->post('/reset-password', [AuthController::class, 'resetPassword'])
                 ->add($validationMiddlewareFactory(ResetPasswordDTO::class));
-            // $group->get('/verify-email', [UserController::class, 'verifyEmail']);
+            $group->get('/activate-account', [AuthController::class, 'activateAccount'])
+                ->add($validationMiddlewareFactory(ActivateAccountDTO::class));
             // $group->get('/resend-verification', [UserController::class, 'resendVerification']);
             // $group->get('/change-password', [UserController::class, 'changePassword']);
             // check username

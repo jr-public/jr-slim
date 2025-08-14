@@ -62,10 +62,10 @@ class EmailService
         return $this->send($email, $subject, $body, $username);
     }
 
-    public function sendWelcomeEmail(string $email, string $username): bool
+    public function sendWelcomeEmail(string $email, string $username, string $token): bool
     {
         $subject = "Welcome to our platform!";
-        $body = $this->buildWelcomeTemplate($username);
+        $body = $this->buildWelcomeTemplate($username, $token);
         
         return $this->send($email, $subject, $body, $username);
     }
@@ -85,13 +85,16 @@ class EmailService
         ";
     }
 
-    private function buildWelcomeTemplate(string $username): string
+    private function buildWelcomeTemplate(string $username, string $token): string
     {
+        $activationUrl = "http://localhost:80/guest/activate-account?token={$token}";
         return "
             <h2>Welcome {$username}!</h2>
             <p>Your account has been successfully created.</p>
-            <p>You can now log in and start using our platform.</p>
-            <p>If you have any questions, feel free to contact our support team.</p>
+            <p>Click the link below to activate it:</p>
+            <p><a href='{$activationUrl}' style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;'>Activate account</a></p>
+            <p>Or copy this link: {$activationUrl}</p>
+            <p><small>This link will expire in 30 minutes. If you didn't request this, please ignore this email.</small></p>
         ";
     }
 }

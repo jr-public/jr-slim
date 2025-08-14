@@ -22,6 +22,12 @@ class AuthController {
         $user = $this->userService->create($data);
         return $this->responseService->success($response, $user->toArray());
     }
+    public function activateAccount(Request $request, Response $response): Response
+    {
+        $token = $request->getAttribute('dto')->token;
+        $this->userService->activateAccount($token);
+        return $this->responseService->success($response);
+    }
     public function login(Request $request, Response $response): Response
     {
         $data   = $request->getParsedBody();
@@ -32,10 +38,9 @@ class AuthController {
     public function forgotPassword(Request $request, Response $response): Response
     {
         $data   = $request->getParsedBody();
-        $forgot = $this->userService->forgotPassword($data['email']);
+        $this->userService->forgotPassword($data['email']);
         // We always return a success, users shouldn't know if emails are in use or not
-        // SHOULD NOT BE RETURNING THE TOKEN
-        return $this->responseService->success($response, $forgot); 
+        return $this->responseService->success($response); 
     }
     public function resetPassword(Request $request, Response $response): Response
     {

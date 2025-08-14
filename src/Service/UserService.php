@@ -69,6 +69,13 @@ class UserService
         $user->setClient($data['client']);
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+        // Create temporary token
+        $token  = $this->tokenService->create([
+            'sub'   => $user->get('id'),
+            'type'  => 'activate-account'
+        ], 30);
+        // Send email; Should be done on a queue so timing is not a factor in this response
+        $this->emailService->sendWelcomeEmail($user->get('email'), $user->get('username'), $token);
         return $user;
     }
     public function patch(array $data): User
@@ -115,5 +122,11 @@ class UserService
             'property'  => 'password',
             'value'     => $password
         ]);
+    }
+    public function activateAccount(string $token): void
+    {
+        $user = $this->tokenService->verify($token, 'activate-account');
+        $user->activate();
+        $this->entityManager->flush();
     }
 }
