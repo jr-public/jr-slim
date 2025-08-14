@@ -9,6 +9,9 @@ use App\Service\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 
 use App\Exception\AuthException;
+use App\Exception\BusinessException;
+
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 class UserService
 {
@@ -62,13 +65,17 @@ class UserService
 
     public function create(array $data): User
     {
-        $user = new User();
-        $user->setUsername($data['username']);
-        $user->setEmail($data['email']);
-        $user->setPassword($data['password']);
-        $user->setClient($data['client']);
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
+        try {
+            $user = new User();
+            $user->setUsername($data['username']);
+            $user->setEmail($data['email']);
+            $user->setPassword($data['password']);
+            $user->setClient($data['client']);
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException $th) {
+            throw new BusinessException('UNIQUE_CONSTRAINT', $th->getMessage());
+        }
         // Create temporary token
         $token  = $this->tokenService->create([
             'sub'   => $user->get('id'),
