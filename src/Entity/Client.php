@@ -5,6 +5,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\Table(name: 'clients')]
+#[ORM\Index(columns: ['domain'])]
 class Client {
     #[ORM\Id]
     #[ORM\Column(type: 'integer')]

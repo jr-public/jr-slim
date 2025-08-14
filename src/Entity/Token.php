@@ -6,6 +6,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity()]
 #[ORM\Table(name: 'tokens')]
+#[ORM\Index(columns: ['token_hash'])]
+#[ORM\Index(columns: ['type'])]
+#[ORM\Index(columns: ['expires_at'])]
+#[ORM\Index(columns: ['used'])]
+#[ORM\Index(columns: ['type', 'expires_at', 'used'])] // Compound for verify()
 class Token
 {
     #[ORM\Id]

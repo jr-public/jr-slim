@@ -6,6 +6,13 @@ use Doctrine\ORM\Mapping\UniqueConstraint;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
+#[ORM\Index(columns: ['username'])]
+#[ORM\Index(columns: ['email'])]
+#[ORM\Index(columns: ['status'])]
+#[ORM\Index(columns: ['client_id'])]
+#[ORM\Index(columns: ['created'])]
+#[ORM\Index(columns: ['username', 'client_id'])] // Compound for login
+#[ORM\Index(columns: ['email', 'client_id'])]    // Compound for email lookup
 #[UniqueConstraint(fields:['username', 'client'])]
 #[UniqueConstraint(fields:['email', 'client'])]
 class User {
