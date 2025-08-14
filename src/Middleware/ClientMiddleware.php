@@ -12,16 +12,14 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 class ClientMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly ClientRepository $client_repo
+        private readonly ClientRepository $clientRepository
     ) {}
 
     public function process(Request $request, RequestHandler $handler): Response
     {
         // used to be //$request->getUri()->getHost() but i changed the approach
         // for now multi-tenancy is disabled
-        $client = $this->client_repo->findOneBy([
-            'domain' => 'localhost'
-        ]); 
+        $client = $this->clientRepository->ensureDefaultClient();
         if (!$client) {
             throw new AuthException('NOT_FOUND', 'Client not found. input: '.$request->getUri()->getHost());
         }
