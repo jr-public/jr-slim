@@ -48,4 +48,10 @@ class AuthController {
         $this->userService->resetPassword($data['token'], $data['password']);
         return $this->responseService->success($response);
     }
+    public function resendActivation(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody();
+        $this->userService->resendActivation($data['email']);
+        return $this->responseService->success($response);
+    }
 }

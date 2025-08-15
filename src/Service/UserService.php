@@ -130,6 +130,19 @@ class UserService
             'value'     => $password
         ]);
     }
+    public function resendActivation(string $email): void
+    {
+        $user = $this->getByEmail($email);
+        if ($user && $user->get('status') === 'pending') {
+            // Create temporary token
+            $token  = $this->tokenService->create([
+                'sub'   => $user->get('id'),
+                'type'  => 'activate-account'
+            ], 30);
+            // Send email; Should be done on a queue so timing is not a factor in this response
+            $this->emailService->sendWelcomeEmail($user->get('email'), $user->get('username'), $token);
+        }
+    }
     public function activateAccount(string $token): void
     {
         $user = $this->tokenService->verify($token, 'activate-account');

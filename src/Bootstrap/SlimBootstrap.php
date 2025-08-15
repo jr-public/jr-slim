@@ -7,6 +7,7 @@ use App\DTO\ActivateAccountDTO;
 use App\DTO\UserCreateDTO;
 use App\DTO\UserPatchDTO;
 use App\DTO\QueryBuilderDTO;
+use App\DTO\ResendActivationDTO;
 use App\DTO\ResetPasswordDTO;
 use App\Exception\ApiException;
 use App\Middleware\AuthenticationMiddleware;
@@ -82,16 +83,15 @@ class SlimBootstrap
             $group->post('/login', [AuthController::class, 'login']);
             $group->post('/register', [AuthController::class, 'register'])
                 ->add($validationMiddlewareFactory(UserCreateDTO::class));
-            // $group->get('/profile', [UserController::class, 'profile']);
             $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
             $group->post('/reset-password', [AuthController::class, 'resetPassword'])
                 ->add($validationMiddlewareFactory(ResetPasswordDTO::class));
             $group->get('/activate-account', [AuthController::class, 'activateAccount'])
                 ->add($validationMiddlewareFactory(ActivateAccountDTO::class));
-            // $group->get('/resend-verification', [UserController::class, 'resendVerification']);
+            $group->post('/resend-activation', [AuthController::class, 'resendActivation'])
+                ->add($validationMiddlewareFactory(ResendActivationDTO::class));
+            // $group->get('/profile', [UserController::class, 'profile']);
             // $group->get('/change-password', [UserController::class, 'changePassword']);
-            // check username
-            // check email
         });
     }
     protected static function getCustomErrorHandler(App $app): callable {
