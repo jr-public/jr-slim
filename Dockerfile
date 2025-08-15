@@ -7,9 +7,13 @@ RUN apt-get install -y --no-install-recommends \
     unzip \
     git
 
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
 RUN docker-php-ext-install pdo pdo_pgsql
 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /var/log/jr-slim && chown www-data:www-data /var/log/jr-slim
 

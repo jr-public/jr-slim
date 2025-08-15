@@ -28,10 +28,10 @@ class AuthorizationMiddleware implements MiddlewareInterface
         // Store users involved for authorization
         $activeUser = $request->getAttribute('active_user');
         $targetUser = null; // Target user might not be used, depending on the action
-
         // Authorization for UserController methods
         // Most likely to change when new controllers are implemented
-        if ($callable[0] == "App\Controller\UserController") {
+        // I must check if its an array as well, since not all routes MUST be a controller method
+        if (is_array($callable) && $callable[0] == "App\Controller\UserController") {
             // If any user querying is involved in the action, these filters will
             // be applied in the Controller
             $forcedFilters = $this->userPermission->getForcedFilters($activeUser);

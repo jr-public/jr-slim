@@ -62,6 +62,14 @@ class DIContainerBootstrap {
                     );
                 };
             }),
+            'redis' => \DI\factory(function () {
+                return new \Predis\Client([
+                    'scheme' => 'tcp',
+                    'host'   => getenv('REDIS_HOST'),
+                    'port'   => getenv('REDIS_PORT'),
+                    'database' => getenv('REDIS_DB'),
+                ]);
+            }),
         ]);
         return $builder->build();
     }

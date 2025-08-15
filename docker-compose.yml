@@ -23,7 +23,16 @@ services:
       - app-network
     env_file:
       - .env
-
+  redis:
+    container_name: ${APP_REDIS_NAME:-example-redis}
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    command: redis-server --appendonly yes
   db:
     container_name: ${APP_DB_NAME:-example-db}
     image: postgres:15
@@ -50,6 +59,7 @@ services:
 volumes:
   db_data:
   vendor_data:
+  redis_data:
   logs:
 
 networks:
