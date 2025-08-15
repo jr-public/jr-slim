@@ -10,6 +10,7 @@ use App\DTO\QueryBuilderDTO;
 use App\DTO\ResendActivationDTO;
 use App\DTO\ResetPasswordDTO;
 use App\Exception\ApiException;
+use App\Middleware\AccountLockoutMiddleware;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
 use App\Middleware\ClientMiddleware;
@@ -38,6 +39,7 @@ class SlimBootstrap
         $app->addBodyParsingMiddleware();
         $app->add(AuthorizationMiddleware::class);
         $app->add(AuthenticationMiddleware::class);
+        $app->add(AccountLockoutMiddleware::class);
         $app->addRoutingMiddleware();
         $app->add(ClientMiddleware::class);
         $errorMiddleware = $app->addErrorMiddleware(true, true, true);
@@ -52,7 +54,6 @@ class SlimBootstrap
 
         $validationMiddleware = $app->getContainer()->get('ValidationMiddlewareFactory');
         $rateLimitMiddleware = $app->getContainer()->get('RateLimitMiddlewareFactory');
-
         //
         $app->group('/users', function (RouteCollectorProxy $group) use ($validationMiddleware) {
             foreach (['', '/', '/index'] as $path) {
