@@ -4,6 +4,8 @@ namespace App\Bootstrap;
 use App\Bootstrap\DoctrineBootstrap;
 use App\Entity\Client;
 use App\Entity\User;
+use Predis\Client AS RedisClient;
+use App\Middleware\RateLimitMiddleware;
 use App\Middleware\ValidationMiddleware;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
@@ -48,10 +50,21 @@ class DIContainerBootstrap {
             UserRepository::class => \DI\factory(function (EntityManagerInterface $em) {
                 return $em->getRepository(User::class);
             }),
+            //
             ValidatorInterface::class => \DI\factory(function () {
                 return Validation::createValidatorBuilder()
                     ->enableAttributeMapping()
                     ->getValidator();
+            }),
+            'RateLimitMiddlewareFactory' => \DI\factory(function (ContainerInterface $c) {
+                return function (string $prefix, int $maxAttempts, int $windowSeconds) use ($c) {
+                    return new RateLimitMiddleware(
+                        $c->get(RedisClient::class),
+                        $prefix,
+                        $maxAttempts,
+                        $windowSeconds
+                    );
+                };
             }),
             'ValidationMiddlewareFactory' => \DI\factory(function (ContainerInterface $c) {
                 return function (string $dtoClass, array $validationGroups = []) use ($c) {
@@ -62,14 +75,14 @@ class DIContainerBootstrap {
                     );
                 };
             }),
-            'redis' => \DI\factory(function () {
-                return new \Predis\Client([
+            RedisClient::class => \DI\factory(function () {
+                return new RedisClient([
                     'scheme' => 'tcp',
                     'host'   => getenv('REDIS_HOST'),
-                    'port'   => getenv('REDIS_PORT'),
-                    'database' => getenv('REDIS_DB'),
+                    'port'   => (int) (getenv('REDIS_PORT')),
+                    'database' => (int) (getenv('REDIS_DB')),
                 ]);
-            }),
+            })
         ]);
         return $builder->build();
     }

@@ -50,27 +50,39 @@ class SlimBootstrap
             return $response;
         });
 
-        $validationMiddlewareFactory = $app->getContainer()->get('ValidationMiddlewareFactory');
+        $validationMiddleware = $app->getContainer()->get('ValidationMiddlewareFactory');
+        $rateLimitMiddleware = $app->getContainer()->get('RateLimitMiddlewareFactory');
 
         //
-        $app->group('/users', function (RouteCollectorProxy $group) use ($validationMiddlewareFactory) {
-            // INDEX
+        $app->group('/users', function (RouteCollectorProxy $group) use ($validationMiddleware) {
             foreach (['', '/', '/index'] as $path) {
                 $group->get($path, [UserController::class, 'index'])
-                    ->add($validationMiddlewareFactory(QueryBuilderDTO::class));
+                    ->add($validationMiddleware(QueryBuilderDTO::class));
             }
-            // CREATE
             foreach (['', '/', '/create'] as $path) {
                 $group->post($path, [UserController::class, 'create'])
-                    ->add($validationMiddlewareFactory(UserCreateDTO::class));
+                    ->add($validationMiddleware(UserCreateDTO::class));
             }
-            // PATCH
             $group->patch('/{id}', [UserController::class, 'patch'])
-                ->add($validationMiddlewareFactory(UserPatchDTO::class));
+                ->add($validationMiddleware(UserPatchDTO::class));
             // GET and DELETE dont need extra validation
             $group->get('/{id}', [UserController::class, 'get']);   // GET /users/{id}: Get a single user by ID
             $group->delete('/{id}', [UserController::class, 'delete']); // DELETE /users/{id}: Delete a user by ID
         });
+        $app->group('/guest', function (RouteCollectorProxy $group) use ($validationMiddleware, $rateLimitMiddleware) {
+            $group->post('/login', [AuthController::class, 'login']);
+            $group->post('/register', [AuthController::class, 'register'])
+                ->add($validationMiddleware(UserCreateDTO::class));
+            $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+            $group->post('/reset-password', [AuthController::class, 'resetPassword'])
+                ->add($validationMiddleware(ResetPasswordDTO::class));
+            $group->get('/activate-account', [AuthController::class, 'activateAccount'])
+                ->add($validationMiddleware(ActivateAccountDTO::class));
+            $group->post('/resend-activation', [AuthController::class, 'resendActivation'])
+                ->add($validationMiddleware(ResendActivationDTO::class));
+        })->add($rateLimitMiddleware('guest:group', 2, 5));
+        
+        /*
         $app->group('/clients', function (RouteCollectorProxy $group) {
             // $group->get('/', [ClientController::class, 'index']);      // GET /clients: Get all users
             // $group->post('/', [ClientController::class, 'store']);     // POST /clients: Create a new user
@@ -79,20 +91,7 @@ class SlimBootstrap
             // $group->delete('/{id}', [ClientController::class, 'delete']); // DELETE /clients/{id}: Delete a user by ID
             // $group->patch('/{id}', [ClientController::class, 'patch']);   // PATCH /clients/{id}: Partially update a user by ID
         });
-        $app->group('/guest', function (RouteCollectorProxy $group) use ($validationMiddlewareFactory) {
-            $group->post('/login', [AuthController::class, 'login']);
-            $group->post('/register', [AuthController::class, 'register'])
-                ->add($validationMiddlewareFactory(UserCreateDTO::class));
-            $group->post('/forgot-password', [AuthController::class, 'forgotPassword']);
-            $group->post('/reset-password', [AuthController::class, 'resetPassword'])
-                ->add($validationMiddlewareFactory(ResetPasswordDTO::class));
-            $group->get('/activate-account', [AuthController::class, 'activateAccount'])
-                ->add($validationMiddlewareFactory(ActivateAccountDTO::class));
-            $group->post('/resend-activation', [AuthController::class, 'resendActivation'])
-                ->add($validationMiddlewareFactory(ResendActivationDTO::class));
-            // $group->get('/profile', [UserController::class, 'profile']);
-            // $group->get('/change-password', [UserController::class, 'changePassword']);
-        });
+        */
     }
     protected static function getCustomErrorHandler(App $app): callable {
         $customErrorHandler = function (
