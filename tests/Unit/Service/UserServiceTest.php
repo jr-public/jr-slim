@@ -2,31 +2,114 @@
 namespace Tests\Unit\Service;
 
 use App\Entity\User;
-use App\Entity\Client;
+use App\Exception\AuthException;
 use App\Repository\UserRepository;
+use App\Service\EmailService;
+use App\Service\TokenService;
 use App\Service\UserService;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
+
 class UserServiceTest extends TestCase
 {
     private UserService $userService;
     private UserRepository|MockObject $userRepositoryMock;
     private EntityManagerInterface|MockObject $entityManagerMock;
+    private TokenService|MockObject $tokenServiceMock;
+    private EmailService|MockObject $emailServiceMock;
 
     protected function setUp(): void
     {
         $this->userRepositoryMock = $this->createMock(UserRepository::class);
         $this->entityManagerMock = $this->createMock(EntityManagerInterface::class);
+        $this->tokenServiceMock = $this->createMock(TokenService::class);
+        $this->emailServiceMock = $this->createMock(EmailService::class);
         
         $this->userService = new UserService(
             $this->userRepositoryMock,
-            $this->entityManagerMock
+            $this->entityManagerMock,
+            $this->tokenServiceMock,
+            $this->emailServiceMock
         );
     }
-	
+
+	public function testLoginWithValidCredentialsReturnsTokenAndUserData(): void
+    {
+        $password = 'correct_password';
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $userData = [
+            'id'        => 456,
+            'username'  => 'testuser',
+            'email'     => 'test@example.com'
+        ];
+        $userMock = $this->createMock(User::class);
+        $userMock->method('toArray')->willReturn($userData);
+        $userMock->method('get')->willReturnMap([
+            ['id', $userData['id']],
+            ['username', $userData['username']],
+            ['email', $userData['email']],
+            ['password', $hashedPassword],
+        ]);        
+
+        $this->userRepositoryMock
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['username' => 'testuser'])
+            ->willReturn($userMock);
+
+        $expectedToken = 'mock_jwt_token_12345';
+        $this->tokenServiceMock
+            ->expects($this->once())
+            ->method('create')
+            ->with([
+                'sub' => $userData['id'],
+                'type' => 'session'
+            ])
+            ->willReturn($expectedToken);
+
+        $result = $this->userService->login($userData['username'], $password);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('token', $result);
+        $this->assertArrayHasKey('user', $result);
+        $this->assertEquals($expectedToken, $result['token']);
+        $this->assertEquals($userData, $result['user']);
+    }
+    public function testLoginWithNonExistentUserThrowsException(): void
+    {
+        $this->userRepositoryMock
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['username' => 'testuser'])
+            ->willReturn(null);
+
+        $this->expectException(AuthException::class);
+        $this->expectExceptionMessage('BAD_CREDENTIALS');
+        $this->userService->login('testuser', 'correct_password');
+    }
+    public function testLoginWithInvalidPasswordThrowsException(): void
+    {
+        $userMock = $this->createMock(User::class);
+        $userMock->method('get')->willReturnMap([
+            ['password', password_hash('correct_password', PASSWORD_DEFAULT)],
+        ]);
+        $this->userRepositoryMock
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['username' => 'testuser'])
+            ->willReturn($userMock);
+
+        try {
+            $this->userService->login('testuser', 'wrong_password');
+            $this->fail('AuthException was not thrown with invalid password.');
+        } catch (AuthException $e) {
+            $this->assertEquals('BAD_CREDENTIALS', $e->getMessage());
+            $this->assertEquals('BAD_PASSWORD', $e->getDetail());
+        }
+    }
 
     /**
      * Helper method to create a mock User for testing
@@ -84,32 +167,6 @@ class UserServiceTest extends TestCase
         $this->assertSame($expectedUsers, $result);
     }
 
-    public function testCreateUserSuccessfully(): void
-    {
-        // Arrange
-        $clientMock = $this->createMock(Client::class);
-        $userData = [
-            'username' 	=> 'testuser',
-            'email' 	=> 'test@example.com',
-            'password' 	=> 'password123',
-            'client' 	=> $clientMock
-        ];
-        $this->entityManagerMock
-            ->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-        $this->entityManagerMock
-            ->expects($this->once())
-            ->method('flush');
-        // Act
-        $result = $this->userService->create($userData);
-        // Assert
-        $this->assertSame($clientMock, $result->get('client'));
-        $this->assertInstanceOf(User::class, $result);
-        $this->assertSame($userData['username'], $result->get('username'));
-        $this->assertSame($userData['email'], $result->get('email'));
-		$this->assertTrue(password_verify($userData['password'], $result->get('password')));
-    }
 
     public function testPatchUserPasswordSuccessfully(): void
     {

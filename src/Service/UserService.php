@@ -37,7 +37,7 @@ class UserService
         $user   = $this->userRepo->findOneBy(['username'=>$username]);
         if (!$user) {
             throw new AuthException('BAD_CREDENTIALS');
-        } elseif (!password_verify($password, $user->get('password'))) { // 
+        } elseif (!$this->verifyPassword($user, $password)) {
             throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
         }
         $token  = $this->tokenService->create([
@@ -45,6 +45,10 @@ class UserService
             'type'      => 'session'
         ]);
         return ['token' => $token, 'user' => $user->toArray()];
+    }
+    public function verifyPassword(User $user, string $password): bool
+    {
+        return password_verify($password, $user->get('password'));
     }
     public function get(int $id): ?User
     {
