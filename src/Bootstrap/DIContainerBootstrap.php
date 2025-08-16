@@ -2,12 +2,10 @@
 namespace App\Bootstrap;
 
 use App\Bootstrap\DoctrineBootstrap;
-use App\Entity\Client;
 use App\Entity\User;
 use Predis\Client AS RedisClient;
 use App\Middleware\RateLimitMiddleware;
 use App\Middleware\ValidationMiddleware;
-use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
 use App\Service\EmailService;
 use App\Service\LogService;
@@ -43,10 +41,6 @@ class DIContainerBootstrap {
                 return DoctrineBootstrap::create();
             }),
             ResponseFactoryInterface::class => \DI\autowire(ResponseFactory::class),
-            // REPOSITORIES
-            ClientRepository::class => \DI\factory(function (EntityManagerInterface $em) {
-                return $em->getRepository(Client::class);
-            }),
             UserRepository::class => \DI\factory(function (EntityManagerInterface $em) {
                 return $em->getRepository(User::class);
             }),

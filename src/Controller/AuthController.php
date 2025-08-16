@@ -18,7 +18,6 @@ class AuthController {
     public function register(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
-        $data['client'] = $request->getAttribute('active_client');
         $user = $this->userService->create($data);
         return $this->responseService->success($response, $user->toArray());
     }
@@ -31,8 +30,7 @@ class AuthController {
     public function login(Request $request, Response $response): Response
     {
         $data   = $request->getParsedBody();
-        $client = $request->getAttribute('active_client');
-        $login  = $this->userService->login($client, $data['username'], $data['password']);
+        $login  = $this->userService->login($data['username'], $data['password']);
         return $this->responseService->success($response, $login);
     }
     public function forgotPassword(Request $request, Response $response): Response

@@ -2,7 +2,6 @@
 namespace App\DTO;
 
 use App\DTO\DataTransferObjectInterface;
-use App\Entity\Client;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -38,9 +37,6 @@ class UserCreateDTO implements DataTransferObjectInterface
     //     message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number'
     // )]
     public string $password;
-
-	#[Assert\Valid]
-	public Client $client;
 
     public function toArray(): array {
         return get_object_vars($this);

@@ -34,9 +34,6 @@ class AuthenticationMiddleware implements MiddlewareInterface
                 return $handler->handle($request);
             }
         }
-        // 
-        $client = $request->getAttribute('active_client');
-
         //
         $authHeader = $request->getHeaderLine('Authorization');
         if (empty($authHeader) || !str_starts_with($authHeader, 'Bearer ')) {
@@ -50,14 +47,11 @@ class AuthenticationMiddleware implements MiddlewareInterface
         if (!isset($decoded->sub)) {
             throw new AuthException('BAD_TOKEN', 'Invalid token: missing user identifier');
         }
-        if (!isset($decoded->client_id) || $decoded->client_id !== $client->get('id')) {
-            throw new AuthException('BAD_TOKEN', 'Invalid token: client mismatch');
-        }
         if (!isset($decoded->type) || $decoded->type !== 'session') {
             throw new AuthException('BAD_TOKEN', 'Invalid token: invalid token type');
         }
         
-        $user = $this->user_repo->get($decoded->sub, $client->get('id'));
+        $user = $this->user_repo->get($decoded->sub);
         if (!$user) {
             throw new AuthException('BAD_TOKEN', 'Invalid token - user not found');
         }

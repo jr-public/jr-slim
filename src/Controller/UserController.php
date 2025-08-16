@@ -26,7 +26,6 @@ class UserController {
     public function create(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
-        $data['client'] = $request->getAttribute('active_client');
         $user = $this->userService->create($data);
         return $this->responseService->success($response, $user->toArray());
     }

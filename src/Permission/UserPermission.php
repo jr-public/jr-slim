@@ -15,9 +15,7 @@ class UserPermission {
         self::ROLE_USER 		=> []
     ];
 	public function getForcedFilters(User $user): array {
-        $options = [
-            'client_id' => $user->get('client')->get('id'),
-        ];
+        $options = [];
         // ROLE
         if ($user->get('role') == 'user') {
             $options['role'] = 'user';
@@ -33,10 +31,6 @@ class UserPermission {
 	}
 	public function canUserManageUser(User $activeUser, User $targetUser): bool
     {
-        if ($activeUser->get('client')->get('id') !== $targetUser->get('client')->get('id')) {
-            return false;
-        }
-		
         $actingRole 		= $activeUser->get('role');
         $actingRoleIndex 	= array_search($actingRole, array_keys(self::ROLE_HIERARCHY));
         $targetRole 		= $targetUser->get('role');
