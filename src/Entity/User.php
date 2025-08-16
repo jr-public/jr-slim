@@ -9,21 +9,14 @@ use Doctrine\ORM\Mapping\UniqueConstraint;
 #[ORM\Index(columns: ['username'])]
 #[ORM\Index(columns: ['email'])]
 #[ORM\Index(columns: ['status'])]
-#[ORM\Index(columns: ['client_id'])]
 #[ORM\Index(columns: ['created'])]
-#[ORM\Index(columns: ['username', 'client_id'])] // Compound for login
-#[ORM\Index(columns: ['email', 'client_id'])]    // Compound for email lookup
-#[UniqueConstraint(fields:['username', 'client'])]
-#[UniqueConstraint(fields:['email', 'client'])]
+#[UniqueConstraint(fields:['username'])]
+#[UniqueConstraint(fields:['email'])]
 class User {
     #[ORM\Id]
     #[ORM\Column(type: 'integer')]
     #[ORM\GeneratedValue]
     private int|null $id = null;
-
-    #[ORM\ManyToOne(targetEntity: Client::class)]
-    #[ORM\JoinColumn(nullable:false)]
-    private Client $client;
 
     #[ORM\Column(type: 'string')]
     private string $username;
@@ -62,7 +55,6 @@ class User {
             'created' => $this->created,
             'status' => $this->status,
             'reset_password' => $this->reset_password,
-            'client' => $this->client->toArray()
         ];
     }
     public function get( string $prop ) {
@@ -72,10 +64,6 @@ class User {
         return property_exists($this, $prop);
     }
     
-    public function setClient( Client $client ): self {
-        $this->client = $client;
-        return $this;
-    }
     public function setUsername( string $username ): self {
         $this->username = $username;
         return $this;

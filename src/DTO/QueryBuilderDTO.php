@@ -18,10 +18,6 @@ class QueryBuilderDTO implements DataTransferObjectInterface
     public ?string $role = null;
 
     #[Assert\Type('integer')]
-    #[Assert\Positive(message: 'Client ID must be a positive integer.')]
-    public ?int $client_id = null;
-
-    #[Assert\Type('integer')]
     #[Assert\PositiveOrZero(message: 'Limit must be a positive integer or zero.')]
     public ?int $limit = null;
 

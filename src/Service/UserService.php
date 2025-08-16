@@ -2,7 +2,6 @@
 namespace App\Service;
 
 use App\Entity\User;
-use App\Entity\Client;
 use App\Repository\UserRepository;
 use App\Service\EmailService;
 use App\Service\TokenService;
@@ -33,9 +32,9 @@ class UserService
         $this->emailService = $emailService;
     }
     
-    public function login(Client $client, string $username, string $password): array
+    public function login(string $username, string $password): array
     {
-        $user   = $this->userRepo->findByUsernameAndClient($username, $client->get('id'));
+        $user   = $this->userRepo->findOneBy(['username'=>$username]);
         if (!$user) {
             throw new AuthException('BAD_CREDENTIALS');
         } elseif (!password_verify($password, $user->get('password'))) { // 
@@ -43,7 +42,6 @@ class UserService
         }
         $token  = $this->tokenService->create([
             'sub'       => $user->get('id'),
-            'client_id' => $client->get('id'),
             'type'      => 'session'
         ]);
         return ['token' => $token, 'user' => $user->toArray()];
@@ -70,7 +68,6 @@ class UserService
             $user->setUsername($data['username']);
             $user->setEmail($data['email']);
             $user->setPassword($data['password']);
-            $user->setClient($data['client']);
             $this->entityManager->persist($user);
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $th) {

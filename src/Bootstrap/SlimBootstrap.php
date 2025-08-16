@@ -13,7 +13,6 @@ use App\Exception\ApiException;
 use App\Middleware\AccountLockoutMiddleware;
 use App\Middleware\AuthenticationMiddleware;
 use App\Middleware\AuthorizationMiddleware;
-use App\Middleware\ClientMiddleware;
 use App\Service\LogService;
 use App\Service\ResponseService;
 
@@ -41,7 +40,6 @@ class SlimBootstrap
         $app->add(AuthenticationMiddleware::class);
         $app->add(AccountLockoutMiddleware::class);
         $app->addRoutingMiddleware();
-        $app->add(ClientMiddleware::class);
         $errorMiddleware = $app->addErrorMiddleware(true, true, true);
         $errorMiddleware->setDefaultErrorHandler(self::getCustomErrorHandler($app)); 
     }
@@ -83,16 +81,6 @@ class SlimBootstrap
                 ->add($validationMiddleware(ResendActivationDTO::class));
         })->add($rateLimitMiddleware('guest:group', 2, 5));
         
-        /*
-        $app->group('/clients', function (RouteCollectorProxy $group) {
-            // $group->get('/', [ClientController::class, 'index']);      // GET /clients: Get all users
-            // $group->post('/', [ClientController::class, 'store']);     // POST /clients: Create a new user
-            // $group->get('/{id}', [ClientController::class, 'get']);   // GET /clients/{id}: Get a single user by ID
-            // $group->put('/{id}', [ClientController::class, 'update']); // PUT /clients/{id}: Update a user by ID
-            // $group->delete('/{id}', [ClientController::class, 'delete']); // DELETE /clients/{id}: Delete a user by ID
-            // $group->patch('/{id}', [ClientController::class, 'patch']);   // PATCH /clients/{id}: Partially update a user by ID
-        });
-        */
     }
     protected static function getCustomErrorHandler(App $app): callable {
         $customErrorHandler = function (
