@@ -3,10 +3,11 @@
     "description": "Template API",
 	"version": "0.1.0",
     "require": {
-        "firebase/php-jwt": "^6.0",
         "doctrine/orm": "^3",
         "doctrine/dbal": "^4",
+        "firebase/php-jwt": "^6.0",
         "monolog/monolog": "^3.9",
+        "predis/predis": "^3.2",
         "slim/slim":"4.*",
         "slim/psr7":"*",
         "symfony/cache": "^7",

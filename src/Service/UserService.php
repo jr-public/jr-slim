@@ -37,9 +37,9 @@ class UserService
     {
         $user   = $this->userRepo->findByUsernameAndClient($username, $client->get('id'));
         if (!$user) {
-            throw new AuthException('BAD_CREDENTIALS, Invalid username');
+            throw new AuthException('BAD_CREDENTIALS');
         } elseif (!password_verify($password, $user->get('password'))) { // 
-            throw new AuthException('BAD_CREDENTIALS, Invalid password'.json_encode([$password, $user->get('password')]));
+            throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
         }
         $token  = $this->tokenService->create([
             'sub'       => $user->get('id'),
