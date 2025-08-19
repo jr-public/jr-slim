@@ -99,7 +99,7 @@ class TokenService
     {
         // Split "id.secret"
         if (strpos($fullToken, '.') === false) {
-            throw new BusinessException('TOKEN_INVALID');
+            throw new BusinessException('TOKEN_INVALID', 'TOKEN_FORMAT');
         }
         [$id, $secret] = explode('.', $fullToken, 2);
 
@@ -117,12 +117,12 @@ class TokenService
             ->setParameter('now', new \DateTimeImmutable());
         $tokenEntity = $qb->getQuery()->getOneOrNullResult();
         if (!$tokenEntity) {
-            throw new BusinessException('TOKEN_INVALID');
+            throw new BusinessException('TOKEN_INVALID', 'TOKEN_NOT_FOUND');
         }
 
         // Verify secret
         if (!password_verify($secret, $tokenEntity->get('token_hash'))) {
-            throw new BusinessException('TOKEN_INVALID');
+            throw new BusinessException('TOKEN_INVALID', 'TOKEN_SECRET_MISMATCH');
         }
         // Mark as used
         $tokenEntity->markUsed();
@@ -130,5 +130,4 @@ class TokenService
 
         return $tokenEntity->get('user');
     }
-
 }

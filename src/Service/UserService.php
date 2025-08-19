@@ -5,6 +5,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\EmailService;
 use App\Service\TokenService;
+use App\Service\UserAuthorizationService;
 use Doctrine\ORM\EntityManagerInterface;
 
 use App\Exception\AuthException;
@@ -14,53 +15,30 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 class UserService
 {
-    private readonly UserRepository $userRepo;
-    private readonly EntityManagerInterface $entityManager;
-    private readonly TokenService $tokenService;
-    private readonly EmailService $emailService;
+
 
     public function __construct(
-        UserRepository $userRepo, 
-        EntityManagerInterface $entityManager, 
-        TokenService $tokenService,
-        EmailService $emailService
-    )
-    {
-        $this->userRepo = $userRepo;
-        $this->entityManager = $entityManager;
-        $this->tokenService = $tokenService;
-        $this->emailService = $emailService;
-    }
+        private readonly UserRepository $userRepo,
+        private readonly UserAuthorizationService $userAuthService,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly TokenService $tokenService,
+        private readonly EmailService $emailService
+    ) {}
     
-    public function login(string $username, string $password): array
-    {
-        $user   = $this->userRepo->findOneBy(['username'=>$username]);
-        if (!$user) {
-            throw new AuthException('BAD_CREDENTIALS');
-        } elseif (!password_verify($password, $user->get('password'))) { // 
-            throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
-        }
-        $token  = $this->tokenService->create([
-            'sub'       => $user->get('id'),
-            'type'      => 'session'
-        ]);
-        return ['token' => $token, 'user' => $user->toArray()];
-    }
     public function get(int $id): ?User
     {
         $options = ["id" => $id];
-        return $this->userRepo->findOneByFilters($options);
+        return $this->userRepo->findOneBy($options);
     }
     public function getByEmail(string $email): ?User
     {
         $options = ["email" => $email];
-        return $this->userRepo->findOneByFilters($options);
+        return $this->userRepo->findOneBy($options);
     }
     public function list(array $options = []): array
     {
         return $this->userRepo->findByFilters($options);
     }
-
     public function create(array $data): User
     {
         try {
@@ -71,7 +49,7 @@ class UserService
             $this->entityManager->persist($user);
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $th) {
-            throw new BusinessException('UNIQUE_CONSTRAINT', $th->getMessage());
+            throw new BusinessException('USER_CREATION_FAILED', 'UNIQUE_CONSTRAINT');
         }
         // Create temporary token
         $token  = $this->tokenService->create([
@@ -90,13 +68,13 @@ class UserService
         switch ($property) {
             case 'password':
                 $user->setPassword($value);
+                $this->entityManager->flush();
                 break;
             case 'email':
                 $user->setEmail($value);
+                $this->entityManager->flush();
                 break;
         }
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
         return $user;
     }
     public function delete(User $user): User
@@ -105,9 +83,27 @@ class UserService
         $this->entityManager->flush();
         return $user;
     }
+    
+    public function login(string $username, string $password): array
+    {
+        $user   = $this->userRepo->findOneBy(['username'=>$username]);
+        if (!$user) {
+            throw new AuthException('BAD_CREDENTIALS');
+        } elseif (!$this->userAuthService->verifyPassword($user->get('password'), $password)) {
+            throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
+        }
+        // Stops users that fail business rules from logging in
+        $this->userAuthService->applyAccessControl($user);
+        // 
+        $token  = $this->tokenService->create([
+            'sub'       => $user->get('id'),
+            'type'      => 'session'
+        ]);
+        return ['token' => $token, 'user' => $user->toArray()];
+    }
     public function forgotPassword(string $email): void
     {
-        $user = $this->getByEmail($email);
+        $user = $this->userRepo->findOneBy(['email' =>$email]);
         if ($user && $user->get('status') === 'active') {
             // Create temporary token
             $token  = $this->tokenService->create([
@@ -129,7 +125,7 @@ class UserService
     }
     public function resendActivation(string $email): void
     {
-        $user = $this->getByEmail($email);
+        $user = $this->userRepo->findOneBy(['email'=>$email]);
         if ($user && $user->get('status') === 'pending') {
             // Create temporary token
             $token  = $this->tokenService->create([
