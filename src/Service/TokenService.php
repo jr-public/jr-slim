@@ -3,11 +3,11 @@ namespace App\Service;
 
 use App\Entity\Token;
 use App\Entity\User;
-
 use Doctrine\ORM\EntityManagerInterface;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
+use App\Exception\AuthException;
 use App\Exception\BusinessException;
 use Firebase\JWT\BeforeValidException;
 use Firebase\JWT\DomainException;
@@ -22,80 +22,60 @@ class TokenService
         private readonly string $algorithm
     ) {}
 
-    public function create(array $payload, int $expirationMinutes = 60): string
+    public function createSessionJwt(User $user, int $expirationMinutes = 60): string
     {
-        if (!isset($payload['type'])) {
-            throw new BusinessException('TOKEN_TYPE_REQUIRED');
-        }
         $now        = new \DateTimeImmutable();
         $expiration = $now->modify("+$expirationMinutes minutes");
-        // Session tokens are not stored in db. Other tokens are.
-        if ($payload['type'] !== 'session') {
-            $id     = $this->random(16, 'hex');      // 128-bit ID as hex
-            $secret = $this->random(32, 'urlsafe'); // 256-bit secret, URL-safe
-            $hash   = password_hash($secret, PASSWORD_DEFAULT);
-            $token  = $id.'.'.$secret;
-            
-            $userRef        = $this->entityManager->getReference(User::class, $payload['sub']);
-            $tokenEntity    = new Token($id, $userRef, $payload['type'], $hash, $expiration);
-            $this->entityManager->persist($tokenEntity);
-            $this->entityManager->flush();
-        }
-        else {
-            // Cretes a JWT using whatever is in the payload
-            // Adds missing mandatory fields
-            $jwtPayload = array_merge([
-                'iat' => $now->getTimestamp(),
-                'exp' => $expiration->getTimestamp()
-            ], $payload);
-            $token = JWT::encode($jwtPayload, $this->secret, $this->algorithm);
-        }
+        $jwtPayload = [
+            'iat' => $now->getTimestamp(),
+            'exp' => $expiration->getTimestamp(),
+            'sub' => $user->get('id'),
+            'type' => 'session'
+        ];
+        $token = JWT::encode($jwtPayload, $this->secret, $this->algorithm);
         return $token;
     }
-    /**
-     * Generate cryptographically secure random data
-     * 
-     * @param int $length Number of random bytes to generate
-     * @param string $encoding Output encoding: 'hex', 'base64', 'urlsafe', or 'raw'
-     * @return string
-     * @throws \Exception if random_bytes fails
-     */
-    public function random(int $length = 32, string $encoding = 'urlsafe'): string
-    {
-        if ($length < 1) {
-            throw new \InvalidArgumentException('Length must be at least 1');
-        }
-
-        $bytes = random_bytes($length);
-        
-        return match($encoding) {
-            'hex'     => bin2hex($bytes),
-            'base64'  => base64_encode($bytes),
-            'urlsafe' => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '='),
-            'raw'     => $bytes,
-            default   => throw new \InvalidArgumentException("Invalid encoding: $encoding")
-        };
-    }
-    public function decode(string $token): object
+    public function decodeSessionJwt(string $token): object
     {
         try {
             $decoded = JWT::decode($token, new Key($this->secret, $this->algorithm));
-            if (!isset($decoded->type)) {
-                throw new BusinessException('TOKEN_TYPE_REQUIRED');
-            }
-            return $decoded;
         }
         catch (BeforeValidException|SignatureInvalidException $e) {
-            throw new BusinessException('TOKEN_INVALID');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_SIGNATURE');
         }
         catch (\UnexpectedValueException|\DomainException|\InvalidArgumentException $e) {
-            throw new BusinessException('TOKEN_INVALID_FORMAT');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_INVALID_FORMAT');
         }
         catch (ExpiredException $e) {
-            throw new BusinessException('TOKEN_EXPIRED');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_EXPIRED');
         }
+        if (!isset($decoded->type)) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_TYPE_REQUIRED');
+        }
+        if ($decoded->type != 'session') {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_TYPE_MISMATCH');
+        }
+        if (!isset($decoded->sub)) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_SUBJECT_REQUIRED');
+        }
+        return $decoded;
     }
-    public function verify(string $fullToken, string $type): ?User
+    public function createToken(string $type, User $user, int $expirationMinutes = 30): string
+    {
+        $now        = new \DateTimeImmutable();
+        $expiration = $now->modify("+$expirationMinutes minutes");
+        
+        $id     = $this->random(16, 'hex');      // 128-bit ID as hex
+        $secret = $this->random(32, 'urlsafe'); // 256-bit secret, URL-safe
+        $hash   = password_hash($secret, PASSWORD_DEFAULT);
+        $token  = $id.'.'.$secret;
+        
+        $tokenEntity    = new Token($id, $user, $type, $hash, $expiration);
+        $this->entityManager->persist($tokenEntity);
+        $this->entityManager->flush();
+        return $token;
+    }
+    public function verifyToken(string $fullToken, string $type): User
     {
         // Split "id.secret"
         if (strpos($fullToken, '.') === false) {
@@ -129,5 +109,29 @@ class TokenService
         $this->entityManager->flush();
 
         return $tokenEntity->get('user');
+    }
+    /**
+     * Generate cryptographically secure random data
+     * 
+     * @param int $length Number of random bytes to generate
+     * @param string $encoding Output encoding: 'hex', 'base64', 'urlsafe', or 'raw'
+     * @return string
+     * @throws \Exception if random_bytes fails
+     */
+    public function random(int $length = 32, string $encoding = 'urlsafe'): string
+    {
+        if ($length < 1) {
+            throw new \InvalidArgumentException('Length must be at least 1');
+        }
+
+        $bytes = random_bytes($length);
+        
+        return match($encoding) {
+            'hex'     => bin2hex($bytes),
+            'base64'  => base64_encode($bytes),
+            'urlsafe' => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '='),
+            'raw'     => $bytes,
+            default   => throw new \InvalidArgumentException("Invalid encoding: $encoding")
+        };
     }
 }

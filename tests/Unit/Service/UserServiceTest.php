@@ -92,7 +92,7 @@ class UserServiceTest extends TestCase
         $expectedToken = 'mock_jwt_token_12345';
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('create')
+            ->method('createSessionJwt')
             ->willReturn($expectedToken);
 
         $result = $this->userService->login($userData['username'], $this->correct_password);
@@ -121,7 +121,7 @@ class UserServiceTest extends TestCase
 
         $this->tokenServiceMock
             ->expects($this->never())
-            ->method('create');
+            ->method('createSessionJwt');
 
         $this->expectException(AuthException::class);
         $this->expectExceptionMessage('BAD_CREDENTIALS');
@@ -149,7 +149,7 @@ class UserServiceTest extends TestCase
 
         $this->tokenServiceMock
             ->expects($this->never())
-            ->method('create');
+            ->method('createSessionJwt');
 
         try {
             $this->userService->login($userData['username'], 'wrong_password');
@@ -195,7 +195,7 @@ class UserServiceTest extends TestCase
 
         $this->tokenServiceMock
             ->expects($this->never())
-            ->method('create');
+            ->method('createSessionJwt');
 
         $this->expectException(AuthException::class);
         $this->expectExceptionMessage('NOT_ACTIVE');
@@ -343,7 +343,7 @@ class UserServiceTest extends TestCase
         // Mock TokenService
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('create')
+            ->method('createToken')
             ->willReturn($fakeToken);
 
         // Mock EmailService
@@ -382,7 +382,7 @@ class UserServiceTest extends TestCase
             ->method('flush');
 
         // TokenService and EmailService should never be called
-        $this->tokenServiceMock->expects($this->never())->method('create');
+        $this->tokenServiceMock->expects($this->never())->method('createToken');
         $this->emailServiceMock->expects($this->never())->method('sendWelcomeEmail');
 
         // Call the service
@@ -513,7 +513,7 @@ class UserServiceTest extends TestCase
         // Mock token service
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('create')
+            ->method('createToken')
             ->willReturn($fakeToken);
 
         // Mock email service
@@ -543,7 +543,7 @@ class UserServiceTest extends TestCase
             ->with(['email' => $userData['email']])
             ->willReturn($userMock);
 
-        $this->tokenServiceMock->expects($this->never())->method('create');
+        $this->tokenServiceMock->expects($this->never())->method('createToken');
         $this->emailServiceMock->expects($this->never())->method('sendPasswordResetEmail');
 
         $this->userService->forgotPassword($userData['email']);
@@ -556,7 +556,7 @@ class UserServiceTest extends TestCase
             ->with(['email' => ''])
             ->willReturn(null);
 
-        $this->tokenServiceMock->expects($this->never())->method('create');
+        $this->tokenServiceMock->expects($this->never())->method('createToken');
         $this->emailServiceMock->expects($this->never())->method('sendPasswordResetEmail');
 
         $this->userService->forgotPassword('');
@@ -571,7 +571,7 @@ class UserServiceTest extends TestCase
 
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('verify')
+            ->method('verifyToken')
             ->with('fake-reset-token', 'forgot-password')
             ->willReturn($userMock);
 
@@ -587,7 +587,7 @@ class UserServiceTest extends TestCase
     {
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('verify')
+            ->method('verifyToken')
             ->with('', 'forgot-password')
             ->willThrowException(new BusinessException('TOKEN_INVALID'));
 
@@ -627,7 +627,7 @@ class UserServiceTest extends TestCase
         // Mock token service
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('create')
+            ->method('createToken')
             ->willReturn($fakeToken);
 
         // Mock email service
@@ -651,7 +651,7 @@ class UserServiceTest extends TestCase
             ->with(['email' => ''])
             ->willReturn(null);
 
-        $this->tokenServiceMock->expects($this->never())->method('create');
+        $this->tokenServiceMock->expects($this->never())->method('createToken');
         $this->emailServiceMock->expects($this->never())->method('sendWelcomeEmail');
 
         $this->userService->resendActivation('');
@@ -670,7 +670,7 @@ class UserServiceTest extends TestCase
             ->with(['email' => $userData['email']])
             ->willReturn($userMock);
 
-        $this->tokenServiceMock->expects($this->never())->method('create');
+        $this->tokenServiceMock->expects($this->never())->method('createToken');
         $this->emailServiceMock->expects($this->never())->method('sendWelcomeEmail');
 
         $this->userService->resendActivation($userData['email']);
@@ -698,7 +698,7 @@ class UserServiceTest extends TestCase
 
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('verify')
+            ->method('verifyToken')
             ->with($fakeToken, 'activate-account')
             ->willReturn($userMock);
         $userMock->expects($this->once())
@@ -713,7 +713,7 @@ class UserServiceTest extends TestCase
     {
         $this->tokenServiceMock
             ->expects($this->once())
-            ->method('verify')
+            ->method('verifyToken')
             ->with('', 'activate-account')
             ->willThrowException(new BusinessException('TOKEN_INVALID'));
 
