@@ -27,6 +27,7 @@ class UserServiceTest extends TestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
         $this->userRepositoryMock = $this->createMock(UserRepository::class);
         $this->userAuthServiceMock = $this->createMock(UserAuthorizationService::class);
         $this->entityManagerMock = $this->createMock(EntityManagerInterface::class);
@@ -80,6 +81,11 @@ class UserServiceTest extends TestCase
 
         $this->userAuthServiceMock
             ->expects($this->once())
+            ->method('verifyPassword')
+            ->willReturn(true);
+
+        $this->userAuthServiceMock
+            ->expects($this->once())
             ->method('applyAccessControl')
             ->with($userMock);
 
@@ -107,6 +113,10 @@ class UserServiceTest extends TestCase
 
         $this->userAuthServiceMock
             ->expects($this->never())
+            ->method('verifyPassword');
+
+        $this->userAuthServiceMock
+            ->expects($this->never())
             ->method('applyAccessControl');
 
         $this->tokenServiceMock
@@ -127,6 +137,11 @@ class UserServiceTest extends TestCase
             ->method('findOneBy')
             ->with(['username' => $userData['username']])
             ->willReturn($userMock);
+
+        $this->userAuthServiceMock
+            ->expects($this->once())
+            ->method('verifyPassword')
+            ->willReturn(false);
 
         $this->userAuthServiceMock
             ->expects($this->never())
@@ -166,40 +181,27 @@ class UserServiceTest extends TestCase
             ->method('findOneBy')
             ->with(['username' => $userData['username']])
             ->willReturn($userMock);
+
+        $this->userAuthServiceMock
+            ->expects($this->once())
+            ->method('verifyPassword')
+            ->willReturn(true);
+
         $this->userAuthServiceMock
             ->expects($this->once())
             ->method('applyAccessControl')
             ->with($userMock)
             ->willThrowException(new AuthException('NOT_ACTIVE'));
+
         $this->tokenServiceMock
             ->expects($this->never())
             ->method('create');
+
         $this->expectException(AuthException::class);
         $this->expectExceptionMessage('NOT_ACTIVE');
 
         $this->userService->login($userData['username'], $this->correct_password);
     }
-    
-    /**
-     * Verify password testing methods
-     */
-    public function testVerifyPasswordReturnsTrueForCorrectPassword(): void
-    {
-        $user = new User();
-        $user->setPassword($this->correct_password);
-        $result = $this->userService->verifyPassword($user, $this->correct_password);
-        $this->assertTrue($result);
-    }
-    
-    public function testVerifyPasswordReturnsFalseForIncorrectPassword(): void
-    {
-        $user = new User();
-        $user->setPassword($this->correct_password);
-        $result = $this->userService->verifyPassword($user, '');
-        $this->assertFalse($result);
-    }
-
-
     /**
      * Get testing methods
      */

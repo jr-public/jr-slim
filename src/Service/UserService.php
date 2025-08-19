@@ -25,27 +25,6 @@ class UserService
         private readonly EmailService $emailService
     ) {}
     
-    public function login(string $username, string $password): array
-    {
-        $user   = $this->userRepo->findOneBy(['username'=>$username]);
-        if (!$user) {
-            throw new AuthException('BAD_CREDENTIALS');
-        } elseif (!$this->verifyPassword($user, $password)) {
-            throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
-        }
-        // Stops users that fail business rules from logging in
-        $this->userAuthService->applyAccessControl($user);
-        // 
-        $token  = $this->tokenService->create([
-            'sub'       => $user->get('id'),
-            'type'      => 'session'
-        ]);
-        return ['token' => $token, 'user' => $user->toArray()];
-    }
-    public function verifyPassword(User $user, string $password): bool
-    {
-        return password_verify($password, $user->get('password'));
-    }
     public function get(int $id): ?User
     {
         $options = ["id" => $id];
@@ -60,7 +39,6 @@ class UserService
     {
         return $this->userRepo->findByFilters($options);
     }
-
     public function create(array $data): User
     {
         try {
@@ -104,6 +82,24 @@ class UserService
         $this->entityManager->remove($user);
         $this->entityManager->flush();
         return $user;
+    }
+    
+    public function login(string $username, string $password): array
+    {
+        $user   = $this->userRepo->findOneBy(['username'=>$username]);
+        if (!$user) {
+            throw new AuthException('BAD_CREDENTIALS');
+        } elseif (!$this->userAuthService->verifyPassword($user->get('password'), $password)) {
+            throw new AuthException('BAD_CREDENTIALS', 'BAD_PASSWORD');
+        }
+        // Stops users that fail business rules from logging in
+        $this->userAuthService->applyAccessControl($user);
+        // 
+        $token  = $this->tokenService->create([
+            'sub'       => $user->get('id'),
+            'type'      => 'session'
+        ]);
+        return ['token' => $token, 'user' => $user->toArray()];
     }
     public function forgotPassword(string $email): void
     {

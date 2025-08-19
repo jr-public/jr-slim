@@ -16,4 +16,8 @@ class UserAuthorizationService
             throw new AuthException('RESET_PASSWORD');
         }
 	}
+    public function verifyPassword(string $hashed, string $password): bool
+    {
+        return password_verify($password, $hashed);
+    }
 }
