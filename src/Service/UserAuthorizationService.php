@@ -7,8 +7,11 @@ use App\Exception\AuthException;
 
 class UserAuthorizationService
 {
-	public function applyAccessControl(User $user): void
+	public function applyAccessControl(?User $user): void
 	{
+        if (!$user) {
+            throw new AuthException('BAD_USER');
+        }
         if ($user->get('status') !== 'active') {
             throw new AuthException('NOT_ACTIVE');
         }
