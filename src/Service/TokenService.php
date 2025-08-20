@@ -21,7 +21,7 @@ class TokenService
         private readonly string $secret,
         private readonly string $algorithm
     ) {}
-
+    
     public function createSessionJwt(User $user, int $expirationMinutes = 60): string
     {
         $now        = new \DateTimeImmutable();
@@ -40,14 +40,23 @@ class TokenService
         try {
             $decoded = JWT::decode($token, new Key($this->secret, $this->algorithm));
         }
-        catch (BeforeValidException|SignatureInvalidException $e) {
-            throw new AuthException('TOKEN_INVALID', 'TOKEN_SIGNATURE');
-        }
-        catch (\UnexpectedValueException|\DomainException|\InvalidArgumentException $e) {
-            throw new AuthException('TOKEN_INVALID', 'TOKEN_INVALID_FORMAT');
+        catch (BeforeValidException $e) {
+            throw new AuthException('TOKEN_INVALID', $e->getMessage());
         }
         catch (ExpiredException $e) {
             throw new AuthException('TOKEN_INVALID', 'TOKEN_EXPIRED');
+        }
+        catch (SignatureInvalidException $e) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_SIGNATURE');
+        }
+        catch (\InvalidArgumentException $e) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_INVALID_ARGUMENT');
+        }
+        catch (\DomainException $e) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_DOMAIN');
+        }
+        catch (\UnexpectedValueException $e) {
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_UNEXPECTED_VALUE');
         }
         if (!isset($decoded->type)) {
             throw new AuthException('TOKEN_INVALID', 'TOKEN_TYPE_REQUIRED');
@@ -79,7 +88,7 @@ class TokenService
     {
         // Split "id.secret"
         if (strpos($fullToken, '.') === false) {
-            throw new BusinessException('TOKEN_INVALID', 'TOKEN_FORMAT');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_FORMAT');
         }
         [$id, $secret] = explode('.', $fullToken, 2);
 
@@ -97,12 +106,12 @@ class TokenService
             ->setParameter('now', new \DateTimeImmutable());
         $tokenEntity = $qb->getQuery()->getOneOrNullResult();
         if (!$tokenEntity) {
-            throw new BusinessException('TOKEN_INVALID', 'TOKEN_NOT_FOUND');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_NOT_FOUND');
         }
 
         // Verify secret
         if (!password_verify($secret, $tokenEntity->get('token_hash'))) {
-            throw new BusinessException('TOKEN_INVALID', 'TOKEN_SECRET_MISMATCH');
+            throw new AuthException('TOKEN_INVALID', 'TOKEN_SECRET_MISMATCH');
         }
         // Mark as used
         $tokenEntity->markUsed();
