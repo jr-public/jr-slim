@@ -40,18 +40,8 @@ class AuthenticationMiddleware implements MiddlewareInterface
             throw new AuthException('BAD_TOKEN', 'Authorization header missing or malformed');
         }
         $token = substr($authHeader, 7);
-        $decoded = $this->token_s->decode($token);
-        if (!isset($decoded->type) || $decoded->type != 'session') {
-            throw new AuthException('BAD_TOKEN', 'Invalid token: wrong token type');
-        }
-        if (!isset($decoded->sub)) {
-            throw new AuthException('BAD_TOKEN', 'Invalid token: missing user identifier');
-        }
-        if (!isset($decoded->type) || $decoded->type !== 'session') {
-            throw new AuthException('BAD_TOKEN', 'Invalid token: invalid token type');
-        }
-        
-        $user = $this->user_repo->get($decoded->sub);
+        $decoded = $this->token_s->decodeSessionJwt($token);
+        $user = $this->user_repo->findOneBy(['id' => $decoded->sub]);
         if (!$user) {
             throw new AuthException('BAD_TOKEN', 'Invalid token - user not found');
         }

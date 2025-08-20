@@ -15,8 +15,6 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 class UserService
 {
-
-
     public function __construct(
         private readonly UserRepository $userRepo,
         private readonly UserAuthorizationService $userAuthService,
@@ -52,10 +50,7 @@ class UserService
             throw new BusinessException('USER_CREATION_FAILED', 'UNIQUE_CONSTRAINT');
         }
         // Create temporary token
-        $token  = $this->tokenService->create([
-            'sub'   => $user->get('id'),
-            'type'  => 'activate-account'
-        ], 30);
+        $token = $this->tokenService->createToken('activate-account', $user);
         // Send email; Should be done on a queue so timing is not a factor in this response
         $this->emailService->sendWelcomeEmail($user->get('email'), $user->get('username'), $token);
         return $user;
@@ -94,11 +89,8 @@ class UserService
         }
         // Stops users that fail business rules from logging in
         $this->userAuthService->applyAccessControl($user);
-        // 
-        $token  = $this->tokenService->create([
-            'sub'       => $user->get('id'),
-            'type'      => 'session'
-        ]);
+        //
+        $token = $this->tokenService->createSessionJwt($user);
         return ['token' => $token, 'user' => $user->toArray()];
     }
     public function forgotPassword(string $email): void
@@ -106,17 +98,14 @@ class UserService
         $user = $this->userRepo->findOneBy(['email' =>$email]);
         if ($user && $user->get('status') === 'active') {
             // Create temporary token
-            $token  = $this->tokenService->create([
-                'sub'   => $user->get('id'),
-                'type'  => 'forgot-password'
-            ], 30);
+            $token = $this->tokenService->createToken('forgot-password', $user);
             // Send email; Should be done on a queue so timing is not a factor in this response
             $this->emailService->sendPasswordResetEmail($user->get('email'), $user->get('username'), $token);
         }
     }
     public function resetPassword(string $token, string $password): void
     {
-        $user = $this->tokenService->verify($token, 'forgot-password');
+        $user = $this->tokenService->verifyToken($token, 'forgot-password');
         $this->patch([
             'user'      => $user,
             'property'  => 'password',
@@ -128,17 +117,14 @@ class UserService
         $user = $this->userRepo->findOneBy(['email'=>$email]);
         if ($user && $user->get('status') === 'pending') {
             // Create temporary token
-            $token  = $this->tokenService->create([
-                'sub'   => $user->get('id'),
-                'type'  => 'activate-account'
-            ], 30);
+            $token = $this->tokenService->createToken('activate-account', $user);
             // Send email; Should be done on a queue so timing is not a factor in this response
             $this->emailService->sendWelcomeEmail($user->get('email'), $user->get('username'), $token);
         }
     }
     public function activateAccount(string $token): void
     {
-        $user = $this->tokenService->verify($token, 'activate-account');
+        $user = $this->tokenService->verifyToken($token, 'activate-account');
         $user->activate();
         $this->entityManager->flush();
     }
